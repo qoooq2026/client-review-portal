@@ -188,7 +188,10 @@ async function submitTask(ev, id, sheetName, taskId, submitKind){
   }
 }
 function showOnly(id, inner){ ['sceneClient','sceneMonth','sceneProduct','sceneType','sceneTasks'].forEach(s=>$(s).classList.add('hidden')); $(id).classList.remove('hidden'); if(inner) $(id).innerHTML = inner; }
-function updateCrumbs(){ const parts=[]; if(state.clientName)parts.push(['客戶',()=>location.href=location.pathname]); if(state.month)parts.push([state.month,()=>{state.month='';state.product='';state.type='';loadMeta()}]); if(state.product)parts.push([state.product,()=>{state.product='';state.type='';showOnly('sceneProduct');updateCrumbs()}]); if(state.type)parts.push([state.type==='thread'?'脆':'影音',()=>{}]); $('crumbs').innerHTML=parts.map((p,i)=>`<span class="crumb ${i===parts.length-1?'current':''}">${html(p[0])}</span>`).join('<span class="crumb">›</span>'); }
+function updateCrumbs(){ const parts=[]; if(state.clientName)parts.push(['客戶',()=>location.href=location.pathname]); if(state.month)parts.push([state.month,()=>{state.month='';state.product='';state.type='';loadMeta()}]); if(state.product)parts.push([state.product,()=>{state.product='';state.type='';showOnly('sceneProduct');updateCrumbs()}]); if(state.type)parts.push([state.type==='thread'?'脆':'影音',()=>{}]); $('crumbs').innerHTML=parts.map((p,i)=>{
+  if(i===parts.length-1) return `<span class="crumb current">${html(p[0])}</span>`;
+  return `<span class="crumb" style="cursor:pointer;text-decoration:underline" onclick="(${p[1].toString()})()">${html(p[0])}</span>`;
+}).join('<span class="crumb"> › </span>');}
 function toggleTask(id){ $(id).classList.toggle('open'); }
 function openLB(url){ $('lbImg').src=url; $('lightbox').classList.add('show'); }
 function closeLB(){ $('lightbox').classList.remove('show'); }
