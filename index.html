@@ -115,14 +115,27 @@ function taskHTML(t, sheetName, id){
   const status = t.videoStatus || t.status || '客戶尚未確認';
   const cls = status==='確認完畢'?'ok':status==='客戶已回需修改'?'modify':status==='修改完成，需確認'?'review':'';
   const imgs = ['image1','image2','image3','commentImg1','commentImg2'].map(k=>imgHTML(t[k])).join('');
-  return `<div class="task" id="${id}"><div class="taskHead" onclick="toggleTask('${id}')"><span class="taskId">${html(t.taskId)}</span>${t.persona?`<span class="persona">${html(t.persona)}</span>`:''}<span class="badge ${cls}">${html(status)}</span><span class="grow"></span>${t.planner?`<span class="date">企劃：${html(t.planner)}</span>`:''}${t.doneDate?`<span class="date">完成：${html(t.doneDate)}</span>`:''}</div><div class="body"><div class="field"><div class="label">腳本內容</div><div class="value">${html(t.content || '—')}</div></div>${t.comment?`<div class="field"><div class="label">留言</div><div class="value">${html(t.comment)}</div></div>`:''}${imgs?`<div class="field"><div class="label">圖片 / 畫面</div><div class="imgs">${imgs}</div></div>`:''}${t.videoLink?`<div class="field"><div class="label">影片連結</div><div class="value"><a href="${html(t.videoLink)}" target="_blank">${html(t.videoLink)}</a></div></div>`:''}<div class="actions"><select id="sel-${id}"><option ${status==='客戶尚未確認'?'selected':''}>客戶尚未確認</option><option ${status==='客戶已回需修改'?'selected':''}>客戶已回需修改</option><option ${status==='修改完成，需確認'?'selected':''}>修改完成，需確認</option><option ${status==='確認完畢'?'selected':''}>確認完畢</option></select><textarea id="fb-${id}" placeholder="客戶回饋 / 修改意見（可空白）">${html(t.videoFeedback || t.feedback || '')}</textarea><button class="btn" onclick="submitTask(event,'${id}','${esc(sheetName)}','${esc(t.taskId)}')">送出確認</button></div></div></div>`;
+  return `<div class="task" id="${id}"><div class="taskHead" onclick="toggleTask('${id}')"><span class="taskId">${html(t.taskId)}</span>${t.persona?`<span class="persona">${html(t.persona)}</span>`:''}<span class="badge ${cls}">${html(status)}</span><span class="grow"></span>${t.planner?`<span class="date">企劃：${html(t.planner)}</span>`:''}${t.doneDate?`<span class="date">完成：${html(t.doneDate)}</span>`:''}</div><div class="body"><div class="field"><div class="label">腳本內容</div><div class="value">${html(t.content || '—')}</div></div>${t.comment?`<div class="field"><div class="label">留言</div><div class="value">${html(t.comment)}</div></div>`:''}${imgs?`<div class="field"><div class="label">圖片 / 畫面</div><div class="imgs">${imgs}</div></div>`:''}${t.videoLink?`<div class="field"><div class="label">影片連結</div><div class="value"><a href="${html(t.videoLink)}" target="_blank">${html(t.videoLink)}</a></div></div>`:''}<div class="actions">${t.status === '確認完畢' && t.videoLink
+  ? `<select id="sel-${id}">
+      <option ${(t.videoStatus||'影片需確認')==='影片需確認'?'selected':''}>影片需確認</option>
+      <option ${t.videoStatus==='需修改'?'selected':''}>需修改</option>
+      <option ${t.videoStatus==='修改稿需確認'?'selected':''}>修改稿需確認</option>
+      <option ${t.videoStatus==='確認完畢'?'selected':''}>確認完畢</option>
+    </select>`
+  : `<select id="sel-${id}">
+      <option ${(t.status||'客戶尚未確認')==='客戶尚未確認'?'selected':''}>客戶尚未確認</option>
+      <option ${t.status==='客戶已回需修改'?'selected':''}>客戶已回需修改</option>
+      <option ${t.status==='修改完成，需確認'?'selected':''}>修改完成，需確認</option>
+      <option ${t.status==='確認完畢'?'selected':''}>確認完畢</option>
+    </select>`
+}<textarea id="fb-${id}" placeholder="客戶回饋 / 修改意見（可空白）">${html(t.videoFeedback || t.feedback || '')}</textarea><button class="btn" onclick="submitTask(event,'${id}','${esc(sheetName)}','${esc(t.taskId)}')">送出確認</button></div></div></div>`;
 }
 function imgHTML(url){ if(!url) return ''; return url.includes('drive.google.com/thumbnail') ? `<img class="img" src="${html(url)}" onclick="openLB('${esc(url)}')" loading="lazy" onerror="this.outerHTML='<a href=&quot;${html(url)}&quot; target=&quot;_blank&quot;>開啟圖片</a>'">` : `<a href="${html(url)}" target="_blank">開啟圖片</a>`; }
 async function submitTask(ev, id, sheetName, taskId){
   ev.stopPropagation();
   const btn = ev.target; btn.disabled=true; btn.textContent='送出中…';
   try{
-    await api('submit', { client:state.client, type:state.type, sheetName, taskId, status:$('sel-'+id).value, feedback:$('fb-'+id).value });
+    await api('submit', { client:state.client, type:state.type, sheetName, taskId, submitKind: (t.status === '確認完畢' && t.videoLink) ? 'video' : 'script', status:$('sel-'+id).value, feedback:$('fb-'+id).value });
     toast('✅ 已送出');
     if($('sel-'+id).value === '確認完畢'){ const el=$(id); el.style.opacity=.3; setTimeout(()=>el.remove(),350); }
     else { btn.textContent='已送出'; }
