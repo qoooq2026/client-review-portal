@@ -70,14 +70,26 @@ async function loadClients(){
 }
 async function chooseClient(id, name){ state.client=id; state.clientName=name; history.replaceState(null,'', location.pathname+'?client='+encodeURIComponent(id)); await loadMeta(); }
 async function loadMeta(){
-  showOnly('sceneMonth', '<div class="loader">載入資料中…</div>');
   try{
     const data = await api('meta', { client: state.client });
-    state.meta=data; state.clientName = (data.client && data.client.clientName) || state.client;
-    $('appTitle').textContent = `${state.clientName}｜內容確認系統`;
-    showOnly('sceneMonth');  // ← 先切換畫面，確保 monthGrid 存在
-    renderMonths(data.months || []); updateCrumbs();
-  }catch(e){ showOnly('sceneMonth', `<div class="empty">載入失敗：${html(e.message)}</div>`); }
+    state.meta = data;
+    state.clientName = (data.client && data.client.clientName) || state.client;
+    $('appTitle').textContent = state.clientName + '｜內容確認系統';
+    // ★ 先 showOnly 讓 DOM 元素出現，再填內容
+    showOnly('sceneMonth');
+    $('monthGrid').innerHTML = (data.months || []).length
+      ? (data.months).map(function(m){
+          return '<div class="tile" onclick="chooseMonth(\'' + esc(m) + '\')">'
+               + '<div class="icon">📅</div><b>' + html(m) + '</b></div>';
+        }).join('')
+      : '<div class="empty">目前沒有月份資料</div>';
+    updateCrumbs();
+  } catch(e) {
+    ['sceneClient','sceneMonth','sceneProduct','sceneType','sceneTasks']
+      .forEach(function(s){ $(s).classList.add('hidden'); });
+    $('sceneMonth').classList.remove('hidden');
+    $('sceneMonth').innerHTML = '<div class="empty">載入失敗：' + html(e.message) + '</div>';
+  }
 }
 function renderMonths(months){
   $('monthGrid').innerHTML = months.length ? months.map(m=>`<div class="tile" onclick="chooseMonth('${esc(m)}')"><div class="icon">📅</div><b>${html(m)}</b></div>`).join('') : '<div class="empty">目前沒有月份資料</div>';
