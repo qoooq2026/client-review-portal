@@ -75,7 +75,8 @@ async function loadMeta(){
     const data = await api('meta', { client: state.client });
     state.meta=data; state.clientName = (data.client && data.client.clientName) || state.client;
     $('appTitle').textContent = `${state.clientName}｜內容確認系統`;
-    renderMonths(data.months || []); showOnly('sceneMonth'); updateCrumbs();
+    showOnly('sceneMonth');  // ← 先切換畫面，確保 monthGrid 存在
+    renderMonths(data.months || []); updateCrumbs();
   }catch(e){ showOnly('sceneMonth', `<div class="empty">載入失敗：${html(e.message)}</div>`); }
 }
 function renderMonths(months){
