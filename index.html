@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>內容確認系統</title>
+<style>
+:root{--bg:#f6f3ed;--card:#fff;--ink:#202020;--muted:#777;--line:#e0d8ce;--main:#2a5c45;--main2:#d4a847;--red:#c0392b;--radius:16px;--shadow:0 8px 28px rgba(0,0,0,.08)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Segoe UI",sans-serif;line-height:1.55}.top{position:sticky;top:0;z-index:5;background:var(--main);color:#fff;padding:16px 22px;box-shadow:0 4px 18px rgba(0,0,0,.14)}.top h1{margin:0;font-size:18px}.top p{margin:2px 0 0;opacity:.75;font-size:12px}.wrap{max-width:980px;margin:0 auto;padding:22px}.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.crumb{font-size:12px;color:var(--muted);cursor:pointer}.crumb.current{color:var(--ink);font-weight:700}.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:16px}.title{font-size:22px;font-weight:800;color:var(--main);margin:0 0 6px}.sub{color:var(--muted);font-size:14px;margin-bottom:18px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}.tile{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:18px 12px;text-align:center;cursor:pointer;transition:.18s}.tile:hover{background:var(--main);border-color:var(--main);color:#fff;transform:translateY(-1px)}.tile .icon{font-size:26px;margin-bottom:6px}.typeGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.typeBtn{border:1.5px solid var(--line);border-radius:14px;background:#fff;padding:22px;cursor:pointer;text-align:center}.typeBtn:hover{background:var(--main);color:#fff}.hidden{display:none}.loader{padding:48px;text-align:center;color:var(--muted)}.task{background:#fff;border:1px solid var(--line);border-radius:16px;margin-bottom:14px;box-shadow:var(--shadow);overflow:hidden}.taskHead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:14px 16px;background:#fbfaf7;border-bottom:1px solid var(--line);cursor:pointer}.taskId{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#f0ebe4;color:#666;border-radius:7px;padding:4px 8px;user-select:text}.badge{font-size:12px;border-radius:999px;padding:4px 10px;background:#f5edcd;color:#967100;font-weight:700}.badge.modify{background:#fde8e4;color:#c0392b}.badge.review{background:#e6f1fa;color:#1d6288}.badge.ok{background:#e5f6eb;color:#1e8449}.persona{font-size:12px;color:#9d7b28}.grow{flex:1}.date{font-size:12px;color:var(--muted)}.body{display:none;padding:18px}.task.open .body{display:block}.field{margin-bottom:14px}.label{font-size:12px;font-weight:800;color:var(--muted);margin-bottom:5px}.value{white-space:pre-wrap;word-break:break-word;background:#f7f3ed;border-radius:10px;padding:12px}.imgs{display:flex;gap:10px;flex-wrap:wrap}.img{width:118px;height:118px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer;background:#eee}.actions{border-top:1px solid var(--line);background:#fdfbf7;padding:16px}.input,select,textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;background:#fff;font:inherit;padding:10px 12px;margin-bottom:10px}textarea{min-height:76px;resize:vertical}.btn{border:0;border-radius:10px;background:var(--main);color:#fff;font-weight:800;padding:11px 18px;cursor:pointer}.btn:disabled{opacity:.55}.empty{text-align:center;color:var(--muted);padding:42px}.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(10px);background:#222;color:#fff;padding:12px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:10;max-width:90vw}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;place-items:center;z-index:20}.lightbox.show{display:grid}.lightbox img{max-width:92vw;max-height:90vh;border-radius:10px}@media(max-width:640px){.wrap{padding:16px}.typeGrid{grid-template-columns:1fr}.grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}.panel{padding:16px}.taskHead{align-items:flex-start}.date{width:100%}}
+</style>
+</head>
+<body>
+<div class="top"><h1 id="appTitle">內容確認系統</h1><p>Content Review Portal</p></div>
+<div class="wrap">
+  <div id="crumbs" class="bar"></div>
+
+  <section id="sceneClient" class="panel hidden">
+    <h2 class="title">選擇客戶</h2><div class="sub">內部測試用；正式給客戶時請用 ?client=客戶代號</div><div id="clientGrid" class="grid"></div>
+  </section>
+
+  <section id="sceneMonth" class="panel hidden">
+    <h2 class="title">選擇月份</h2><div class="sub">請選擇要確認的發布月份</div><div id="monthGrid" class="grid"></div>
+  </section>
+
+  <section id="sceneProduct" class="panel hidden">
+    <h2 class="title">選擇商品</h2><div id="productSub" class="sub"></div><div id="productGrid" class="grid"></div>
+  </section>
+
+  <section id="sceneType" class="panel hidden">
+    <h2 class="title">選擇內容類型</h2><div id="typeSub" class="sub"></div><div class="typeGrid"><button class="typeBtn" onclick="chooseType('thread')"><div style="font-size:32px">🧵</div><b>脆（Threads）</b><br><small>短文 / 圖片 / 留言</small></button><button class="typeBtn" onclick="chooseType('video')"><div style="font-size:32px">🎬</div><b>影音</b><br><small>腳本 / 畫面說明</small></button></div>
+  </section>
+
+  <section id="sceneTasks" class="panel hidden">
+    <h2 id="taskTitle" class="title"></h2><div id="taskSub" class="sub"></div><div id="taskList"></div>
+  </section>
+</div>
+<div id="toast" class="toast"></div>
+<div id="lightbox" class="lightbox" onclick="closeLB()"><img id="lbImg" alt="preview"></div>
+<script>
+// TODO：部署 Apps Script Web App 後，把 /exec 網址貼在這裡
+const GAS_API_URL = 'PASTE_YOUR_GAS_EXEC_URL_HERE';
+
+const state = { client:'', clientName:'', month:'', product:'', type:'', meta:null };
+const $ = id => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+
+init();
+async function init(){
+  state.client = qs.get('client') || '';
+  if(!GAS_API_URL || GAS_API_URL.includes('PASTE_')) return showOnly('sceneMonth', '<div class="empty">請先在 index.html 設定 GAS_API_URL</div>');
+  if(!state.client) return loadClients();
+  await loadMeta();
+}
+async function api(action, params={}){
+  const url = new URL(GAS_API_URL);
+  url.searchParams.set('action', action);
+  Object.keys(params).forEach(k => url.searchParams.set(k, params[k] ?? ''));
+  const res = await fetch(url.toString(), { method:'GET' });
+  const data = await res.json();
+  if(data.ok === false) throw new Error(data.error || 'API error');
+  return data;
+}
+async function loadClients(){
+  showOnly('sceneClient', '<div class="loader">載入客戶中…</div>');
+  try{
+    const data = await api('clients');
+    $('clientGrid').innerHTML = data.clients.map(c => `<div class="tile" onclick="chooseClient('${esc(c.clientId)}','${esc(c.clientName)}')"><div class="icon">🏷️</div><b>${html(c.clientName || c.clientId)}</b><br><small>${html(c.clientId)}</small></div>`).join('') || '<div class="empty">沒有啟用客戶</div>';
+    showOnly('sceneClient'); updateCrumbs();
+  }catch(e){ showOnly('sceneClient', `<div class="empty">載入失敗：${html(e.message)}</div>`); }
+}
+async function chooseClient(id, name){ state.client=id; state.clientName=name; history.replaceState(null,'', location.pathname+'?client='+encodeURIComponent(id)); await loadMeta(); }
+async function loadMeta(){
+  showOnly('sceneMonth', '<div class="loader">載入資料中…</div>');
+  try{
+    const data = await api('meta', { client: state.client });
+    state.meta=data; state.clientName = (data.client && data.client.clientName) || state.client;
+    $('appTitle').textContent = `${state.clientName}｜內容確認系統`;
+    renderMonths(data.months || []); showOnly('sceneMonth'); updateCrumbs();
+  }catch(e){ showOnly('sceneMonth', `<div class="empty">載入失敗：${html(e.message)}</div>`); }
+}
+function renderMonths(months){
+  $('monthGrid').innerHTML = months.length ? months.map(m=>`<div class="tile" onclick="chooseMonth('${esc(m)}')"><div class="icon">📅</div><b>${html(m)}</b></div>`).join('') : '<div class="empty">目前沒有月份資料</div>';
+}
+function chooseMonth(m){ state.month=m; $('productSub').textContent='月份：'+m; $('productGrid').innerHTML=(state.meta.products||[]).map((p,i)=>`<div class="tile" onclick="chooseProduct('${esc(p)}')"><div class="icon">${['🛍️','💊','🧴','🍵','✨','🎯'][i%6]}</div><b>${html(p)}</b></div>`).join('') || '<div class="empty">無商品資料</div>'; showOnly('sceneProduct'); updateCrumbs(); }
+function chooseProduct(p){ state.product=p; $('typeSub').textContent=state.month+' · '+state.product; showOnly('sceneType'); updateCrumbs(); }
+function chooseType(t){ state.type=t; loadTasks(); showOnly('sceneTasks'); updateCrumbs(); }
+async function loadTasks(){
+  $('taskTitle').textContent = state.type==='thread'?'脆（Threads）確認':'影音確認';
+  $('taskSub').textContent = `${state.month} · ${state.product}`;
+  $('taskList').innerHTML = '<div class="loader">載入任務中…</div>';
+  try{
+    const data = await api('data', { client:state.client, month:state.month, product:state.product, type:state.type });
+    renderTasks(data.tasks || [], data.sheetName || '');
+  }catch(e){ $('taskList').innerHTML = `<div class="empty">載入失敗：${html(e.message)}</div>`; }
+}
+function renderTasks(tasks, sheetName){
+  const rows = tasks.filter(t => (t.videoStatus || t.status) !== '確認完畢');
+  if(!rows.length){ $('taskList').innerHTML = tasks.length ? '<div class="empty">🎉 所有任務都已確認完畢</div>' : '<div class="empty">目前沒有任務資料</div>'; return; }
+  $('taskList').innerHTML = rows.map((t,i)=>taskHTML(t, sheetName, 'task'+i)).join('');
+}
+function taskHTML(t, sheetName, id){
+  const status = t.videoStatus || t.status || '客戶尚未確認';
+  const cls = status==='確認完畢'?'ok':status==='客戶已回需修改'?'modify':status==='修改完成，需確認'?'review':'';
+  const imgs = ['image1','image2','image3','commentImg1','commentImg2'].map(k=>imgHTML(t[k])).join('');
+  return `<div class="task" id="${id}"><div class="taskHead" onclick="toggleTask('${id}')"><span class="taskId">${html(t.taskId)}</span>${t.persona?`<span class="persona">${html(t.persona)}</span>`:''}<span class="badge ${cls}">${html(status)}</span><span class="grow"></span>${t.planner?`<span class="date">企劃：${html(t.planner)}</span>`:''}${t.doneDate?`<span class="date">完成：${html(t.doneDate)}</span>`:''}</div><div class="body"><div class="field"><div class="label">腳本內容</div><div class="value">${html(t.content || '—')}</div></div>${t.comment?`<div class="field"><div class="label">留言</div><div class="value">${html(t.comment)}</div></div>`:''}${imgs?`<div class="field"><div class="label">圖片 / 畫面</div><div class="imgs">${imgs}</div></div>`:''}${t.videoLink?`<div class="field"><div class="label">影片連結</div><div class="value"><a href="${html(t.videoLink)}" target="_blank">${html(t.videoLink)}</a></div></div>`:''}<div class="actions"><select id="sel-${id}"><option ${status==='客戶尚未確認'?'selected':''}>客戶尚未確認</option><option ${status==='客戶已回需修改'?'selected':''}>客戶已回需修改</option><option ${status==='修改完成，需確認'?'selected':''}>修改完成，需確認</option><option ${status==='確認完畢'?'selected':''}>確認完畢</option></select><textarea id="fb-${id}" placeholder="客戶回饋 / 修改意見（可空白）">${html(t.videoFeedback || t.feedback || '')}</textarea><button class="btn" onclick="submitTask(event,'${id}','${esc(sheetName)}','${esc(t.taskId)}')">送出確認</button></div></div></div>`;
+}
+function imgHTML(url){ if(!url) return ''; return url.includes('drive.google.com/thumbnail') ? `<img class="img" src="${html(url)}" onclick="openLB('${esc(url)}')" loading="lazy" onerror="this.outerHTML='<a href=&quot;${html(url)}&quot; target=&quot;_blank&quot;>開啟圖片</a>'">` : `<a href="${html(url)}" target="_blank">開啟圖片</a>`; }
+async function submitTask(ev, id, sheetName, taskId){
+  ev.stopPropagation();
+  const btn = ev.target; btn.disabled=true; btn.textContent='送出中…';
+  try{
+    await api('submit', { client:state.client, type:state.type, sheetName, taskId, status:$('sel-'+id).value, feedback:$('fb-'+id).value });
+    toast('✅ 已送出');
+    if($('sel-'+id).value === '確認完畢'){ const el=$(id); el.style.opacity=.3; setTimeout(()=>el.remove(),350); }
+    else { btn.textContent='已送出'; }
+  }catch(e){ toast('⚠️ 送出失敗：'+e.message); btn.disabled=false; btn.textContent='送出確認'; }
+}
+function showOnly(id, inner){ ['sceneClient','sceneMonth','sceneProduct','sceneType','sceneTasks'].forEach(s=>$(s).classList.add('hidden')); $(id).classList.remove('hidden'); if(inner) $(id).innerHTML = inner; }
+function updateCrumbs(){ const parts=[]; if(state.clientName)parts.push(['客戶',()=>location.href=location.pathname]); if(state.month)parts.push([state.month,()=>{state.month='';state.product='';state.type='';loadMeta()}]); if(state.product)parts.push([state.product,()=>{state.product='';state.type='';showOnly('sceneProduct');updateCrumbs()}]); if(state.type)parts.push([state.type==='thread'?'脆':'影音',()=>{}]); $('crumbs').innerHTML=parts.map((p,i)=>`<span class="crumb ${i===parts.length-1?'current':''}">${html(p[0])}</span>`).join('<span class="crumb">›</span>'); }
+function toggleTask(id){ $(id).classList.toggle('open'); }
+function openLB(url){ $('lbImg').src=url; $('lightbox').classList.add('show'); }
+function closeLB(){ $('lightbox').classList.remove('show'); }
+function toast(msg){ $('toast').textContent=msg; $('toast').classList.add('show'); setTimeout(()=>$('toast').classList.remove('show'),3000); }
+function html(s){ return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function esc(s){ return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+</script>
+</body>
+</html>
