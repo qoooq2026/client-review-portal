@@ -37,7 +37,6 @@
 <div id="toast" class="toast"></div>
 <div id="lightbox" class="lightbox" onclick="closeLB()"><img id="lbImg" alt="preview"></div>
 <script>
-// TODO：部署 Apps Script Web App 後，把 /exec 網址貼在這裡
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxBPxJSK_VPMQnPOfWvHTx2fkq9NgOgFegziTSPFiaS-J5-duSITKM8xdj7je6gDcE/exec';
 
 const state = { client:'', clientName:'', month:'', product:'', type:'', meta:null };
@@ -75,7 +74,6 @@ async function loadMeta(){
     state.meta = data;
     state.clientName = (data.client && data.client.clientName) || state.client;
     $('appTitle').textContent = state.clientName + '｜內容確認系統';
-    // ★ 先 showOnly 讓 DOM 元素出現，再填內容
     showOnly('sceneMonth');
     $('monthGrid').innerHTML = (data.months || []).length
       ? (data.months).map(function(m){
@@ -91,10 +89,12 @@ async function loadMeta(){
     $('sceneMonth').innerHTML = '<div class="empty">載入失敗：' + html(e.message) + '</div>';
   }
 }
-function renderMonths(months){
-  $('monthGrid').innerHTML = months.length ? months.map(m=>`<div class="tile" onclick="chooseMonth('${esc(m)}')"><div class="icon">📅</div><b>${html(m)}</b></div>`).join('') : '<div class="empty">目前沒有月份資料</div>';
+function chooseMonth(m){
+  state.month=m;
+  $('productSub').textContent='月份：'+m;
+  $('productGrid').innerHTML=(state.meta.products||[]).map((p,i)=>`<div class="tile" onclick="chooseProduct('${esc(p)}')"><div class="icon">${['🛍️','💊','🧴','🍵','✨','🎯'][i%6]}</div><b>${html(p)}</b></div>`).join('') || '<div class="empty">無商品資料</div>';
+  showOnly('sceneProduct'); updateCrumbs();
 }
-function chooseMonth(m){ state.month=m; $('productSub').textContent='月份：'+m; $('productGrid').innerHTML=(state.meta.products||[]).map((p,i)=>`<div class="tile" onclick="chooseProduct('${esc(p)}')"><div class="icon">${['🛍️','💊','🧴','🍵','✨','🎯'][i%6]}</div><b>${html(p)}</b></div>`).join('') || '<div class="empty">無商品資料</div>'; showOnly('sceneProduct'); updateCrumbs(); }
 function chooseProduct(p){ state.product=p; $('typeSub').textContent=state.month+' · '+state.product; showOnly('sceneType'); updateCrumbs(); }
 function chooseType(t){ state.type=t; loadTasks(); showOnly('sceneTasks'); updateCrumbs(); }
 async function loadTasks(){
@@ -106,62 +106,115 @@ async function loadTasks(){
     renderTasks(data.tasks || [], data.sheetName || '');
   }catch(e){ $('taskList').innerHTML = `<div class="empty">載入失敗：${html(e.message)}</div>`; }
 }
-function renderTasks(tasks, sheetName){
-  const rows = tasks.filter(t => (t.videoStatus || t.status) !== '確認完畢');
-  if(!rows.length){ $('taskList').innerHTML = tasks.length ? '<div class="empty">🎉 所有任務都已確認完畢</div>' : '<div class="empty">目前沒有任務資料</div>'; return; }
-  $('taskList').innerHTML = rows.map((t,i)=>taskHTML(t, sheetName, 'task'+i)).join('');
-}
-function taskHTML(t, sheetName, id){
-  var isVideoPhase = (state.type === 'video' && t.status === '確認完畢' && t.videoLink);
-  var status = isVideoPhase ? (t.videoStatus || '影片需確認') : (t.status || '客戶尚未確認');
-  var cls = status==='確認完畢'?'ok':status==='客戶已回需修改'||status==='需修改'?'modify':status==='修改完成，需確認'||status==='修改稿需確認'?'review':'';
-  var imgs = ['image1','image2','image3','commentImg1','commentImg2'].map(function(k){ return imgHTML(t[k]); }).join('');
 
-  var selectHtml = isVideoPhase
-    ? '<select id="sel-'+id+'">'
-      + '<option '+(status==='影片需確認'?'selected':'')+'>影片需確認</option>'
-      + '<option '+(status==='需修改'?'selected':'')+'>需修改</option>'
-      + '<option '+(status==='修改稿需確認'?'selected':'')+'>修改稿需確認</option>'
-      + '<option '+(status==='確認完畢'?'selected':'')+'>確認完畢</option>'
-      + '</select>'
-    : '<select id="sel-'+id+'">'
-      + '<option '+(status==='客戶尚未確認'?'selected':'')+'>客戶尚未確認</option>'
-      + '<option '+(status==='客戶已回需修改'?'selected':'')+'>客戶已回需修改</option>'
-      + '<option '+(status==='修改完成，需確認'?'selected':'')+'>修改完成，需確認</option>'
-      + '<option '+(status==='確認完畢'?'selected':'')+'>確認完畢</option>'
+function isDone(t){
+  // ★ 影音：只看影片-狀態；脆：看腳本狀態
+  if(state.type === 'video') return t.videoStatus === '確認完畢';
+  return t.status === '確認完畢';
+}
+
+function renderTasks(tasks, sheetName){
+  const rows = tasks.filter(t => !isDone(t));
+  if(!rows.length){
+    $('taskList').innerHTML = tasks.length
+      ? '<div class="empty">🎉 所有任務都已確認完畢</div>'
+      : '<div class="empty">目前沒有任務資料</div>';
+    return;
+  }
+  $('taskList').innerHTML = rows.map((t,i) => taskHTML(t, sheetName, 'task'+i)).join('');
+}
+
+function taskHTML(t, sheetName, id){
+  var scriptStatus = t.status || '客戶尚未確認';
+  var videoStatus  = t.videoStatus || '影片需確認';
+
+  var scriptCls = scriptStatus==='確認完畢'?'ok':scriptStatus==='客戶已回需修改'?'modify':scriptStatus==='修改完成，需確認'?'review':'';
+  var videoCls  = videoStatus==='確認完畢'?'ok':videoStatus==='需修改'?'modify':videoStatus==='修改稿需確認'?'review':'';
+
+  // ★ badge：影音顯示影片-狀態；脆顯示腳本狀態
+  var mainStatus = state.type === 'video' ? videoStatus : scriptStatus;
+  var mainCls    = state.type === 'video' ? videoCls    : scriptCls;
+
+  var imgs = ['image1','image2','image3','commentImg1','commentImg2']
+    .map(function(k){ return imgHTML(t[k]); }).join('');
+
+  // 腳本確認區
+  var scriptSelect =
+    '<select id="ssel-'+id+'">'
+    + '<option '+(scriptStatus==='客戶尚未確認'?'selected':'')+'>客戶尚未確認</option>'
+    + '<option '+(scriptStatus==='客戶已回需修改'?'selected':'')+'>客戶已回需修改</option>'
+    + '<option '+(scriptStatus==='修改完成，需確認'?'selected':'')+'>修改完成，需確認</option>'
+    + '<option '+(scriptStatus==='確認完畢'?'selected':'')+'>確認完畢</option>'
+    + '</select>';
+
+  // 影片確認區（影音類型才顯示）
+  var videoSection = '';
+  if(state.type === 'video'){
+    var videoSelect =
+      '<select id="vsel-'+id+'">'
+      + '<option '+(videoStatus==='影片需確認'?'selected':'')+'>影片需確認</option>'
+      + '<option '+(videoStatus==='需修改'?'selected':'')+'>需修改</option>'
+      + '<option '+(videoStatus==='修改稿需確認'?'selected':'')+'>修改稿需確認</option>'
+      + '<option '+(videoStatus==='確認完畢'?'selected':'')+'>確認完畢</option>'
       + '</select>';
 
-  var feedbackVal = isVideoPhase ? (t.videoFeedback || '') : (t.feedback || '');
-  var submitKind  = isVideoPhase ? 'video' : 'script';
+    videoSection =
+      '<div style="border-top:1.5px dashed #e0d8ce;margin:14px 0 10px;padding-top:14px">'
+      + '<div class="label" style="margin-bottom:8px">🎬 影片確認</div>'
+      + (t.videoLink
+          ? '<div class="field"><div class="label">影片連結</div>'
+            + '<div class="value"><a href="'+html(t.videoLink)+'" target="_blank">▶️ 開啟影片</a></div></div>'
+          : '<div class="field"><div class="value" style="color:var(--muted)">影片尚未上傳</div></div>')
+      + videoSelect
+      + '<textarea id="vfb-'+id+'" placeholder="影片回饋意見（可空白）">'+html(t.videoFeedback||'')+'</textarea>'
+      + '<button class="btn" style="background:#1d6288" onclick="submitTask(event,\''+id+'\',\''+esc(sheetName)+'\',\''+esc(t.taskId)+'\',\'video\')">送出影片確認</button>'
+      + '</div>';
+  }
 
   return '<div class="task" id="'+id+'">'
     + '<div class="taskHead" onclick="toggleTask(\''+id+'\')">'
     + '<span class="taskId">'+html(t.taskId)+'</span>'
     + (t.persona ? '<span class="persona">'+html(t.persona)+'</span>' : '')
-    + '<span class="badge '+cls+'">'+html(status)+'</span>'
+    + '<span class="badge '+mainCls+'">'+html(mainStatus)+'</span>'
     + '<span class="grow"></span>'
-    + (t.planner ? '<span class="date">企劃：'+html(t.planner)+'</span>' : '')
+    + (t.planner  ? '<span class="date">企劃：'+html(t.planner)+'</span>'  : '')
     + (t.doneDate ? '<span class="date">完成：'+html(t.doneDate)+'</span>' : '')
     + '</div>'
     + '<div class="body">'
-    + '<div class="field"><div class="label">腳本內容</div><div class="value">'+html(t.content || '—')+'</div></div>'
+    + '<div class="field"><div class="label">腳本內容</div><div class="value">'+html(t.content||'—')+'</div></div>'
     + (t.comment ? '<div class="field"><div class="label">留言</div><div class="value">'+html(t.comment)+'</div></div>' : '')
     + (imgs ? '<div class="field"><div class="label">圖片 / 畫面</div><div class="imgs">'+imgs+'</div></div>' : '')
-    + (t.videoLink ? '<div class="field"><div class="label">影片</div><div class="value"><a href="'+html(t.videoLink)+'" target="_blank">▶️ 開啟影片</a></div></div>' : '')
     + '<div class="actions">'
-    + selectHtml
-    + '<textarea id="fb-'+id+'" placeholder="回饋意見（可空白）">'+html(feedbackVal)+'</textarea>'
-    + '<button class="btn" onclick="submitTask(event,\''+id+'\',\''+esc(sheetName)+'\',\''+esc(t.taskId)+'\',\''+submitKind+'\')">送出確認</button>'
+    + '<div class="label" style="margin-bottom:8px">📝 腳本確認</div>'
+    + scriptSelect
+    + '<textarea id="sfb-'+id+'" placeholder="腳本回饋意見（可空白）">'+html(t.feedback||'')+'</textarea>'
+    + '<button class="btn" onclick="submitTask(event,\''+id+'\',\''+esc(sheetName)+'\',\''+esc(t.taskId)+'\',\'script\')">送出腳本確認</button>'
+    + videoSection
     + '</div>'
     + '</div>'
     + '</div>';
 }
-function imgHTML(url){ if(!url) return ''; return url.includes('drive.google.com/thumbnail') ? `<img class="img" src="${html(url)}" onclick="openLB('${esc(url)}')" loading="lazy" onerror="this.outerHTML='<a href=&quot;${html(url)}&quot; target=&quot;_blank&quot;>開啟圖片</a>'">` : `<a href="${html(url)}" target="_blank">開啟圖片</a>`; }
+
+function imgHTML(url){
+  if(!url) return '';
+  return url.includes('drive.google.com/thumbnail')
+    ? `<img class="img" src="${html(url)}" onclick="openLB('${esc(url)}')" loading="lazy" onerror="this.outerHTML='<a href=&quot;${html(url)}&quot; target=&quot;_blank&quot;>開啟圖片</a>'">`
+    : `<a href="${html(url)}" target="_blank">開啟圖片</a>`;
+}
+
 async function submitTask(ev, id, sheetName, taskId, submitKind){
   ev.stopPropagation();
   var btn = ev.target; btn.disabled=true; btn.textContent='送出中…';
-  var selVal = document.getElementById('sel-'+id).value;
-  var fbVal  = document.getElementById('fb-'+id).value;
+
+  var status='', feedback='', videoStatus='', videoFeedback='';
+  if(submitKind === 'script'){
+    status   = document.getElementById('ssel-'+id).value;
+    feedback = document.getElementById('sfb-'+id).value;
+  } else {
+    videoStatus   = document.getElementById('vsel-'+id).value;
+    videoFeedback = document.getElementById('vfb-'+id).value;
+  }
+
   try{
     await api('submit', {
       client: state.client,
@@ -169,29 +222,50 @@ async function submitTask(ev, id, sheetName, taskId, submitKind){
       sheetName: sheetName,
       taskId: taskId,
       submitKind: submitKind,
-      status: submitKind === 'script' ? selVal : '',
-      feedback: submitKind === 'script' ? fbVal : '',
-      videoStatus: submitKind === 'video' ? selVal : '',
-      videoFeedback: submitKind === 'video' ? fbVal : ''
+      status: status,
+      feedback: feedback,
+      videoStatus: videoStatus,
+      videoFeedback: videoFeedback
     });
     toast('✅ 已送出');
-    if(selVal === '確認完畢'){
+
+    // ★ 淡出條件：
+    // 影音 → 只要影片-狀態選了「確認完畢」就淡出
+    // 脆   → 腳本狀態選了「確認完畢」就淡出
+    var shouldFade = false;
+    if(state.type === 'video'){
+      shouldFade = (submitKind === 'video' && videoStatus === '確認完畢');
+    } else {
+      shouldFade = (submitKind === 'script' && status === '確認完畢');
+    }
+
+    if(shouldFade){
       var el = document.getElementById(id);
-      el.style.opacity = .3;
-      setTimeout(function(){ el.remove(); }, 350);
+      el.style.transition = 'opacity .35s';
+      el.style.opacity = '0';
+      setTimeout(function(){ el.remove(); }, 380);
     } else {
       btn.textContent = '已送出';
     }
   } catch(e){
     toast('⚠️ 送出失敗：'+e.message);
-    btn.disabled=false; btn.textContent='送出確認';
+    btn.disabled=false;
+    btn.textContent = submitKind==='script' ? '送出腳本確認' : '送出影片確認';
   }
 }
+
 function showOnly(id, inner){ ['sceneClient','sceneMonth','sceneProduct','sceneType','sceneTasks'].forEach(s=>$(s).classList.add('hidden')); $(id).classList.remove('hidden'); if(inner) $(id).innerHTML = inner; }
-function updateCrumbs(){ const parts=[]; if(state.clientName)parts.push(['客戶',()=>location.href=location.pathname]); if(state.month)parts.push([state.month,()=>{state.month='';state.product='';state.type='';loadMeta()}]); if(state.product)parts.push([state.product,()=>{state.product='';state.type='';showOnly('sceneProduct');updateCrumbs()}]); if(state.type)parts.push([state.type==='thread'?'脆':'影音',()=>{}]); $('crumbs').innerHTML=parts.map((p,i)=>{
-  if(i===parts.length-1) return `<span class="crumb current">${html(p[0])}</span>`;
-  return `<span class="crumb" style="cursor:pointer;text-decoration:underline" onclick="(${p[1].toString()})()">${html(p[0])}</span>`;
-}).join('<span class="crumb"> › </span>');}
+function updateCrumbs(){
+  const parts=[];
+  if(state.clientName) parts.push(['客戶', ()=>location.href=location.pathname]);
+  if(state.month)      parts.push([state.month, ()=>{ state.month=''; state.product=''; state.type=''; loadMeta(); }]);
+  if(state.product)    parts.push([state.product, ()=>{ state.product=''; state.type=''; showOnly('sceneProduct'); updateCrumbs(); }]);
+  if(state.type)       parts.push([state.type==='thread'?'脆':'影音', ()=>{}]);
+  $('crumbs').innerHTML = parts.map((p,i)=>{
+    if(i===parts.length-1) return `<span class="crumb current">${html(p[0])}</span>`;
+    return `<span class="crumb" style="cursor:pointer;text-decoration:underline" onclick="(${p[1].toString()})()">${html(p[0])}</span>`;
+  }).join('<span class="crumb"> › </span>');
+}
 function toggleTask(id){ $(id).classList.toggle('open'); }
 function openLB(url){ $('lbImg').src=url; $('lightbox').classList.add('show'); }
 function closeLB(){ $('lightbox').classList.remove('show'); }
