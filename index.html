@@ -338,9 +338,12 @@ function taskHTML(t, sheetName, id, ds, isPriority){
     + videoOpts.map(function(o){ return '<option'+(vs===o?' selected':'')+'>'+o+'</option>'; }).join('')
     + '</select>';
 
-  // 脆：顯示圖片+留言內圖片；影音：不顯示圖片區塊
-  var imgs = state.type === 'thread'
-    ? ['image1','image2','image3','commentImg1','commentImg2'].map(function(k){ return imgHTML(t[k]); }).filter(Boolean).join('')
+  // 脆：分開腳本圖片和留言內圖片；影音：不顯示圖片
+  var scriptImgs = state.type === 'thread'
+    ? ['image1','image2','image3'].map(function(k){ return imgHTML(t[k]); }).filter(Boolean).join('')
+    : '';
+  var commentImgs = state.type === 'thread'
+    ? ['commentImg1','commentImg2'].map(function(k){ return imgHTML(t[k]); }).filter(Boolean).join('')
     : '';
 
   // 影片區
@@ -390,7 +393,8 @@ function taskHTML(t, sheetName, id, ds, isPriority){
     + (t.comment ? '<div class="field"><div class="label">留言</div><div class="value">'+html(t.comment)+'</div></div>' : '')
     + (t.feedback ? '<div class="field"><div class="label">上次回饋</div><div class="value" style="background:var(--accent-light);border-left:3px solid var(--accent)">'+html(t.feedback)+'</div></div>' : '')
     + (t.videoFeedback ? '<div class="field"><div class="label">影片回饋記錄</div><div class="value" style="background:var(--blue-light);border-left:3px solid var(--blue)">'+html(t.videoFeedback)+'</div></div>' : '')
-    + (imgs ? '<div class="field"><div class="label">圖片 / 畫面</div><div class="imgs">'+imgs+'</div></div>' : '')
+    + (scriptImgs ? '<div class="field"><div class="label">腳本圖片</div><div class="imgs">'+scriptImgs+'</div></div>' : '')
+    + (commentImgs ? '<div class="field" style="border-top:1px dashed var(--line);padding-top:14px;margin-top:4px"><div class="label">留言內圖片</div><div class="imgs">'+commentImgs+'</div></div>' : '')
     + '</div>'
     + scriptAction
     + '</div>'
