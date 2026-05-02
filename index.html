@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>內容確認系統</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -26,7 +26,8 @@
   --shadow:0 4px 20px rgba(0,0,0,.07);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',sans-serif;line-height:1.6;min-height:100vh}
+html{overflow-x:hidden}
+body{background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',sans-serif;line-height:1.6;min-height:100vh;overflow-x:hidden;max-width:100vw}
 
 /* TOP BAR */
 .top{background:var(--main);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.18)}
@@ -97,9 +98,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',sans-serif
 .body-inner{padding:16px}
 .field{margin-bottom:14px}
 .label{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
-.value{white-space:pre-wrap;word-break:break-word;background:#f7f3ed;border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.65}
-.imgs{display:flex;gap:10px;flex-wrap:wrap}
-.img{width:110px;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer;background:#eee}
+.value{white-space:pre-wrap;word-break:break-word;background:#f7f3ed;border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.65;max-width:100%}
+.imgs{display:flex;gap:10px;flex-wrap:wrap;max-width:100%}
+.img{width:110px;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer;background:#eee;flex-shrink:0}
 
 /* ACTION ZONE */
 .action-zone{background:#f9f6f1;border-top:1px solid var(--line);padding:16px}
@@ -408,10 +409,20 @@ var _obs = new MutationObserver(function(){
 _obs.observe(document.body, {childList:true, subtree:true});
 
 function imgHTML(url){
-  if(!url) return '';
-  return url.includes('drive.google.com/thumbnail')
-    ? '<img class="img" src="'+html(url)+'" onclick="openLB(\''+esc(url)+'\')" loading="lazy">'
-    : '<a href="'+html(url)+'" target="_blank" style="font-size:12px;color:var(--blue)">開啟圖片</a>';
+  if(!url || url.trim()==='') return '';
+  var u = url.trim();
+  // 已轉成 thumbnail 格式
+  if(u.includes('drive.google.com/thumbnail'))
+    return '<img class="img" src="'+html(u)+'" onclick="openLB(\''+esc(u)+'\')" loading="lazy">';
+  // Drive file 連結，轉成 thumbnail
+  var m = u.match(/\/file\/d\/([^\/\?]+)/);
+  if(!m) m = u.match(/[?&]id=([^&]+)/);
+  if(m){
+    var thumb = 'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w800';
+    return '<img class="img" src="'+html(thumb)+'" onclick="openLB(\''+esc(thumb)+'\')" loading="lazy">';
+  }
+  // 其他連結
+  return '<a href="'+html(u)+'" target="_blank" style="font-size:12px;color:var(--blue)">開啟圖片</a>';
 }
 
 async function submitTask(ev, id, sheetName, taskId, submitKind){
