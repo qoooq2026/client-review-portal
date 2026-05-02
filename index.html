@@ -286,8 +286,12 @@ function getTaskDisplayState(t){
 function renderTasks(tasks, sheetName){
   if(!tasks.length){ $('taskList').innerHTML='<div class="empty">目前沒有任務資料</div>'; return; }
 
+  // ★ 篩掉狀態空白的任務（腳本尚未分配，不需客戶看）
+  var filtered = tasks.filter(function(t){ return t.status && t.status.trim() !== ''; });
+  if(!filtered.length){ $('taskList').innerHTML='<div class="empty">目前沒有待確認的任務</div>'; return; }
+
   var active=[], passive=[], done=[];
-  tasks.forEach(function(t,i){
+  filtered.forEach(function(t,i){
     var ds = getTaskDisplayState(t);
     var obj = {t:t, ds:ds, i:i, sheetName:sheetName};
     if(ds.group==='done') done.push(obj);
@@ -333,8 +337,10 @@ function taskHTML(t, sheetName, id, ds, isPriority){
     + videoOpts.map(function(o){ return '<option'+(vs===o?' selected':'')+'>'+o+'</option>'; }).join('')
     + '</select>';
 
-  var imgs = ['image1','image2','image3','commentImg1','commentImg2']
-    .map(function(k){ return imgHTML(t[k]); }).filter(Boolean).join('');
+  // 脆：顯示圖片+留言內圖片；影音：不顯示圖片區塊
+  var imgs = state.type === 'thread'
+    ? ['image1','image2','image3','commentImg1','commentImg2'].map(function(k){ return imgHTML(t[k]); }).filter(Boolean).join('')
+    : '';
 
   // 影片區
   var videoSection = '';
@@ -423,8 +429,50 @@ async function submitTask(ev, id, sheetName, taskId, submitKind){
     await api('submit',{client:state.client,type:state.type,sheetName:sheetName,taskId:taskId,submitKind:submitKind,status:status,feedback:feedback,videoStatus:videoStatus,videoFeedback:videoFeedback});
     toast('✅ 已送出');
 
-    // 重新載入任務列表以反映最新狀態
-    setTimeout(function(){ loadTasks(); }, 600);
+    // ★ 就地更新：不重跑畫面，直接更新 task 的狀態 badge 和分組
+    var taskEl = document.getElementById(id);
+    if(taskEl){
+      // 更新本地狀態物件以便重算 badge
+      var fakeT = {};
+      taskEl.querySelectorAll('select').forEach(function(sel){
+        if(sel.id==='ssel-'+id) fakeT.status = sel.value;
+        if(sel.id==='vsel-'+id) fakeT.videoStatus = sel.value;
+      });
+      fakeT.status = fakeT.status || status || '';
+      fakeT.videoStatus = fakeT.videoStatus || videoStatus || '';
+      fakeT.videoLink = taskEl.querySelector('.video-link') ? '有' : '';
+
+      var newDs = getTaskDisplayState(fakeT);
+
+      // 更新 badge
+      var badge = taskEl.querySelector('.badge');
+      if(badge){
+        badge.className = 'badge '+newDs.cls;
+        badge.textContent = newDs.label;
+      }
+      // 更新 emoji
+      var emojiEl = taskEl.querySelector('.taskHead span:first-child');
+      if(emojiEl) emojiEl.textContent = newDs.emoji;
+
+      // 如果變成 done，移到下方區塊
+      if(newDs.group === 'done'){
+        taskEl.classList.remove('priority');
+        taskEl.classList.add('done-section');
+        // 找或建立 done 區塊
+        var doneSection = document.querySelector('.section-done');
+        if(!doneSection){
+          var divider = document.createElement('div');
+          divider.className = 'section-done';
+          divider.innerHTML = '<div class="section-done-label">已確認完畢（可點開調整）</div>';
+          $('taskList').appendChild(divider);
+        }
+        $('taskList').appendChild(taskEl);
+        taskEl.classList.remove('open');
+      }
+    }
+
+    btn.disabled=false;
+    btn.textContent=submitKind==='script'?'送出腳本確認':'送出影片確認';
   }catch(e){
     toast('⚠️ 送出失敗：'+e.message);
     btn.disabled=false;
