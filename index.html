@@ -199,7 +199,11 @@ const qs = new URLSearchParams(location.search);
 init();
 async function init(){
   state.client = qs.get('client') || '';
-  if(!GAS_API_URL || GAS_API_URL.includes('PASTE_')) return showOnly('sceneMonth','<div class="empty">請先設定 GAS_API_URL</div>');
+  if(!GAS_API_URL || GAS_API_URL.includes('PASTE_')){
+  showOnly('sceneMonth');
+  setGridError('monthGrid', '請先設定 GAS_API_URL');
+  return;
+}
   if(!state.client) return loadClients();
   await loadMeta();
 }
@@ -213,12 +217,16 @@ async function api(action, params={}){
   return data;
 }
 async function loadClients(){
-  showOnly('sceneClient','<div class="loader">載入中…</div>');
+  showOnly('sceneClient');
+  setGridLoading('clientGrid', '載入中…');
   try{
     const data = await api('clients');
     $('clientGrid').innerHTML = data.clients.map(c=>`<div class="tile" onclick="chooseClient('${esc(c.clientId)}','${esc(c.clientName)}')"><div class="icon">🏷️</div><b>${html(c.clientName||c.clientId)}</b></div>`).join('') || '<div class="empty">沒有啟用客戶</div>';
     showOnly('sceneClient'); updateCrumbs();
-  }catch(e){ showOnly('sceneClient',`<div class="empty">載入失敗：${html(e.message)}</div>`); }
+  }catch(e){
+  showOnly('sceneClient');
+  setGridError('clientGrid', e.message);
+}
 }
 async function chooseClient(id, name){ state.client=id; state.clientName=name; history.replaceState(null,'',location.pathname+'?client='+encodeURIComponent(id)); await loadMeta(); }
 async function loadMeta(){
@@ -231,7 +239,8 @@ async function loadMeta(){
       : '<div class="empty">目前沒有月份資料</div>';
     showOnly('sceneMonth'); updateCrumbs();
   }catch(e){
-    showOnly('sceneMonth',`<div class="empty">載入失敗：${html(e.message)}</div>`);
+    showOnly('sceneMonth');
+  setGridError('monthGrid', e.message);
   }
 }
 function chooseMonth(m){
@@ -495,21 +504,92 @@ async function submitTask(ev, id, sheetName, taskId, submitKind){
   }
 }
 
-function showOnly(id, inner){
-  ['sceneClient','sceneMonth','sceneProduct','sceneType','sceneTasks'].forEach(s=>$(s).classList.add('hidden'));
-  $(id).classList.remove('hidden');
-  if(inner) $(id).innerHTML=inner;
+function showOnly(id){
+  ['sceneClient','sceneMonth','sceneProduct','sceneType','sceneTasks'].forEach(function(s){
+    var el = $(s);
+    if(el) el.classList.add('hidden');
+  });
+  var target = $(id);
+  if(target) target.classList.remove('hidden');
 }
-function updateCrumbs(){
-  var parts=[];
-  if(state.clientName) parts.push({label:'客戶', fn:function(){location.href=location.pathname;}});
-  if(state.month)      parts.push({label:state.month, fn:function(){state.month='';state.product='';state.type='';loadMeta();}});
-  if(state.product)    parts.push({label:state.product, fn:function(){state.product='';state.type='';showOnly('sceneProduct');updateCrumbs();}});
-  if(state.type)       parts.push({label:state.type==='thread'?'脆':'影音', fn:null});
 
-  $('crumbs').innerHTML = parts.map(function(p,i){
-    if(i===parts.length-1) return '<span class="crumb current">'+html(p.label)+'</span>';
-    return '<span class="crumb link" onclick="('+p.fn.toString()+')()">'+html(p.label)+'</span>';
+function setGridLoading(gridId, text){
+  var el = $(gridId);
+  if(el) el.innerHTML = '<div class="loader">'+html(text || '載入中…')+'</div>';
+}
+
+function setGridError(gridId, msg){
+  var el = $(gridId);
+  if(el) el.innerHTML = '<div class="empty">載入失敗：'+html(msg)+'</div>';
+}
+
+function goClientHome(){
+  state.month = '';
+  state.product = '';
+  state.type = '';
+  history.pushState(null, '', location.pathname + '?client=' + encodeURIComponent(state.client));
+  loadMeta();
+}
+
+function goMonthPage(){
+  state.product = '';
+  state.type = '';
+  history.pushState(null, '', location.pathname + '?client=' + encodeURIComponent(state.client));
+  showOnly('sceneProduct');
+  updateCrumbs();
+}
+
+function goProductPage(){
+  state.type = '';
+  history.pushState(null, '', location.pathname + '?client=' + encodeURIComponent(state.client));
+  showOnly('sceneType');
+  updateCrumbs();
+}
+
+function updateCrumbs(){
+  var parts = [];
+
+  if(state.clientName){
+    parts.push({
+      label: state.clientName,
+      sub: '客戶首頁',
+      fn: 'goClientHome()'
+    });
+  }
+
+  if(state.month){
+    parts.push({
+      label: state.month,
+      sub: '月份',
+      fn: 'goMonthPage()'
+    });
+  }
+
+  if(state.product){
+    parts.push({
+      label: state.product,
+      sub: '商品',
+      fn: 'goProductPage()'
+    });
+  }
+
+  if(state.type){
+    parts.push({
+      label: state.type === 'thread' ? '脆（Threads）' : '影音',
+      sub: '內容類型',
+      fn: ''
+    });
+  }
+
+  $('crumbs').innerHTML = parts.map(function(p, i){
+    var text = '<span style="font-size:11px;color:var(--muted);font-weight:500">'+html(p.sub)+'</span>' +
+               '<span style="display:block;font-size:13px">'+html(p.label)+'</span>';
+
+    if(i === parts.length - 1){
+      return '<span class="crumb current">'+text+'</span>';
+    }
+
+    return '<span class="crumb link" onclick="'+p.fn+'">'+text+'</span>';
   }).join('<span class="sep"> › </span>');
 }
 function toggleTask(id){$(id).classList.toggle('open');}
