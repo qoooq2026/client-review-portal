@@ -56,6 +56,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',sans-serif
 .tile{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:16px 12px;text-align:center;cursor:pointer;transition:.18s;font-size:13px}
 .tile:hover{background:var(--main);border-color:var(--main);color:#fff;transform:translateY(-2px);box-shadow:0 6px 20px rgba(42,92,69,.2)}
 .tile .icon{font-size:24px;margin-bottom:6px}
+.countRow{display:flex;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.countBadge{font-size:11px;border-radius:999px;padding:2px 8px;font-weight:700}
+.countNeed{background:var(--accent-light);color:var(--accent)}
+.countDone{background:var(--main-light);color:var(--main)}
+.countMuted{background:#eee;color:#777}
 .typeGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .typeBtn{border:1.5px solid var(--line);border-radius:14px;background:var(--card);padding:24px;cursor:pointer;text-align:center;transition:.18s;font-family:inherit;color:var(--ink)}
 .typeBtn:hover{background:var(--main);color:#fff;border-color:var(--main);transform:translateY(-2px)}
@@ -196,17 +201,24 @@ const state = { client:'', clientName:'', month:'', product:'', type:'', meta:nu
 const $ = id => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
 let navLock = false;
+let navSeq = 0;
 
-function safeNav(fn){
+async function safeNav(fn){
   if(navLock) return;
   navLock = true;
+  document.body.classList.add('nav-busy');
   try {
-    fn();
+    await fn();
   } finally {
     setTimeout(function(){
       navLock = false;
-    }, 500);
+      document.body.classList.remove('nav-busy');
+    }, 300);
   }
+}
+
+function isStale(seq){
+  return seq !== navSeq;
 }
 init();
 async function init(){
@@ -255,23 +267,167 @@ async function loadMeta(){
   setGridError('monthGrid', e.message);
   }
 }
-function chooseMonth(m){
-  state.month=m;
-  $('productSub').textContent='月份：'+m;
-  $('productGrid').innerHTML=(state.meta.products||[]).map((p,i)=>`<div class="tile" onclick="chooseProduct('${esc(p)}')"><div class="icon">${['🛍️','💊','🧴','🍵','✨','🎯'][i%6]}</div><b>${html(p)}</b></div>`).join('')||'<div class="empty">無商品</div>';
-  showOnly('sceneProduct'); updateCrumbs();
-}
-function chooseProduct(p){ state.product=p; $('typeSub').textContent=state.month+' · '+state.product; showOnly('sceneType'); updateCrumbs(); }
-function chooseType(t){ state.type=t; loadTasks(); showOnly('sceneTasks'); updateCrumbs(); }
+async function chooseMonth(m){
+  if(navLock) return;
+  const seq = ++navSeq;
 
-async function loadTasks(){
-  $('taskTitle').textContent=state.type==='thread'?'脆（Threads）確認':'影音確認';
-  $('taskSub').textContent=`${state.month} · ${state.product}`;
-  $('taskList').innerHTML='<div class="loader">載入任務中…</div>';
+  state.month = m;
+  state.product = '';
+  state.type = '';
+
+  $('productSub').textContent = '月份：' + m;
+  $('productGrid').innerHTML = '<div class="loader">統計商品任務中…</div>';
+
+  showOnly('sceneProduct');
+  updateCrumbs();
+
+  const products = state.meta.products || [];
+  const counts = await buildProductCounts(m, products);
+  if(isStale(seq)) return;
+  const sortedProducts = products.slice().sort(function(a, b){
+  const ca = counts[a] || {need:0, done:0, total:0};
+  const cb = counts[b] || {need:0, done:0, total:0};
+
+  return (cb.need - ca.need)
+      || (ca.done - cb.done)
+      || (cb.total - ca.total)
+      || String(a).localeCompare(String(b), 'zh-Hant');
+});
+  $('productGrid').innerHTML = sortedProducts.map((p,i)=>{
+    const c = counts[p] || {need:0, done:0, total:0};
+    return `<div class="tile" onclick="safeNav(function(){ return chooseProduct('${esc(p)}') })">
+      <div class="icon">${['🛍️','💊','🧴','🍵','✨','🎯'][i%6]}</div>
+      <b>${html(p)}</b>
+      ${countHTML(c)}
+    </div>`;
+  }).join('') || '<div class="empty">無商品</div>';
+}
+
+async function chooseProduct(p){
+  if(navLock) return;
+  const seq = ++navSeq;
+
+  state.product = p;
+  state.type = '';
+
+  $('typeSub').textContent = state.month + ' · ' + state.product;
+  showOnly('sceneType');
+  updateCrumbs();
+
+  await renderTypeCounts(seq);
+}
+
+async function chooseType(t){
+  if(navLock) return;
+  const seq = ++navSeq;
+
+  state.type = t;
+  showOnly('sceneTasks');
+  updateCrumbs();
+
+  await loadTasks(seq);
+}
+
+async function loadTasks(seq){
+  $('taskTitle').textContent = state.type === 'thread' ? '脆（Threads）確認' : '影音確認';
+  $('taskSub').textContent = `${state.month} · ${state.product}`;
+  $('taskList').innerHTML = '<div class="loader">載入任務中…</div>';
+
   try{
-    const data=await api('data',{client:state.client,month:state.month,product:state.product,type:state.type});
-    renderTasks(data.tasks||[],data.sheetName||'');
-  }catch(e){ $('taskList').innerHTML=`<div class="empty">載入失敗：${html(e.message)}</div>`; }
+    const data = await api('data',{
+      client: state.client,
+      month: state.month,
+      product: state.product,
+      type: state.type
+    });
+
+    if(seq && isStale(seq)) return;
+
+    renderTasks(data.tasks || [], data.sheetName || '');
+  }catch(e){
+    $('taskList').innerHTML = `<div class="empty">載入失敗：${html(e.message)}</div>`;
+  }
+}
+
+  function countTasks(tasks, type){
+  var oldType = state.type;
+  state.type = type;
+
+  var result = {need:0, done:0, total:0};
+
+  (tasks || []).forEach(function(t){
+    if(!t.status || !t.status.trim()) return;
+
+    var ds = getTaskDisplayState(t);
+    result.total++;
+
+    if(ds.group === 'done') result.done++;
+    else if(ds.group === 'active') result.need++;
+  });
+
+  state.type = oldType;
+  return result;
+}
+
+function mergeCount(a, b){
+  return {
+    need: (a.need || 0) + (b.need || 0),
+    done: (a.done || 0) + (b.done || 0),
+    total: (a.total || 0) + (b.total || 0)
+  };
+}
+
+function countHTML(c){
+  if(!c || !c.total){
+    return '<div class="countRow"><span class="countBadge countMuted">無任務</span></div>';
+  }
+
+  return '<div class="countRow">'
+    + '<span class="countBadge countNeed">待確認 ' + c.need + '</span>'
+    + '<span class="countBadge countDone">已完成 ' + c.done + '</span>'
+    + '</div>';
+}
+
+async function fetchCount(month, product, type){
+  try{
+    const data = await api('data',{
+      client: state.client,
+      month: month,
+      product: product,
+      type: type
+    });
+    return countTasks(data.tasks || [], type);
+  }catch(e){
+    return {need:0, done:0, total:0};
+  }
+}
+
+async function buildProductCounts(month, products){
+  var result = {};
+
+  await Promise.all((products || []).map(async function(product){
+    var thread = await fetchCount(month, product, 'thread');
+    var video  = await fetchCount(month, product, 'video');
+    result[product] = mergeCount(thread, video);
+  }));
+
+  return result;
+}
+
+async function renderTypeCounts(seq){
+  const thread = await fetchCount(state.month, state.product, 'thread');
+  const video  = await fetchCount(state.month, state.product, 'video');
+
+  if(isStale(seq)) return;
+
+  document.querySelector('button[onclick="chooseType(\'thread\')"]').innerHTML =
+    '<div style="font-size:32px;margin-bottom:8px">🧵</div><b>脆（Threads）</b><br><small style="color:inherit;opacity:.7">短文 / 圖片 / 留言</small>' + countHTML(thread);
+
+  document.querySelector('button[onclick="chooseType(\'video\')"]').innerHTML =
+    '<div style="font-size:32px;margin-bottom:8px">🎬</div><b>影音</b><br><small style="color:inherit;opacity:.7">腳本 / 畫面說明</small>' + countHTML(video);
+
+  document.querySelector('button[onclick="chooseType(\'thread\')"]').setAttribute('onclick', "safeNav(function(){ return chooseType('thread') })");
+  document.querySelector('button[onclick="chooseType(\'video\')"]').setAttribute('onclick', "safeNav(function(){ return chooseType('video') })");
 }
 
 // ─── 狀態計算 ───────────────────────────────────────────────
@@ -597,11 +753,15 @@ function updateCrumbs(){
     var text = '<span style="font-size:11px;color:var(--muted);font-weight:500">'+html(p.sub)+'</span>' +
                '<span style="display:block;font-size:13px">'+html(p.label)+'</span>';
 
-    if(i === parts.length - 1){
-      return '<span class="crumb current">'+text+'</span>';
-    }
+if(i === parts.length - 1){
+  return '<span class="crumb current">'+text+'</span>';
+}
 
-    return '<span class="crumb link" onclick="safeNav(function(){ '+p.fn+' })">'+text+'</span>';
+if(!p.fn){
+  return '<span class="crumb disabled">'+text+'</span>';
+}
+
+return '<span class="crumb link" onclick="safeNav(function(){ '+p.fn+' })">'+text+'</span>';
   }).join('<span class="sep"> › </span>');
 }
 function toggleTask(id){$(id).classList.toggle('open');}
