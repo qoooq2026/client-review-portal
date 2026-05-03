@@ -61,6 +61,12 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',sans-serif
 .countNeed{background:var(--accent-light);color:var(--accent)}
 .countDone{background:var(--main-light);color:var(--main)}
 .countMuted{background:#eee;color:#777}
+  .nav-busy .tile,
+.nav-busy .typeBtn,
+.nav-busy .crumb.link{
+  pointer-events:none;
+  opacity:.55;
+}
 .typeGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .typeBtn{border:1.5px solid var(--line);border-radius:14px;background:var(--card);padding:24px;cursor:pointer;text-align:center;transition:.18s;font-family:inherit;color:var(--ink)}
 .typeBtn:hover{background:var(--main);color:#fff;border-color:var(--main);transform:translateY(-2px)}
@@ -258,9 +264,9 @@ async function loadMeta(){
     const data = await api('meta',{client:state.client});
     state.meta=data; state.clientName=(data.client&&data.client.clientName)||state.client;
     $('appTitle').textContent=state.clientName+'｜內容確認系統';
-    $('monthGrid').innerHTML=(data.months||[]).length
-      ? data.months.map(m=>`<div class="tile" onclick="chooseMonth('${esc(m)}')"><div class="icon">📅</div><b>${html(m)}</b></div>`).join('')
-      : '<div class="empty">目前沒有月份資料</div>';
+$('monthGrid').innerHTML=(data.months||[]).length
+  ? data.months.map(m=>`<div class="tile" onclick="safeNav(function(){ return chooseMonth('${esc(m)}') })"><div class="icon">📅</div><b>${html(m)}</b></div>`).join('')
+  : '<div class="empty">目前沒有月份資料</div>';
     showOnly('sceneMonth'); updateCrumbs();
   }catch(e){
     showOnly('sceneMonth');
@@ -268,12 +274,13 @@ async function loadMeta(){
   }
 }
 async function chooseMonth(m){
-  if(navLock) return;
   const seq = ++navSeq;
 
   state.month = m;
   state.product = '';
   state.type = '';
+
+  document.body.classList.add('nav-busy');
 
   $('productSub').textContent = '月份：' + m;
   $('productGrid').innerHTML = '<div class="loader">統計商品任務中…</div>';
@@ -281,30 +288,43 @@ async function chooseMonth(m){
   showOnly('sceneProduct');
   updateCrumbs();
 
-  const products = state.meta.products || [];
-  const counts = await buildProductCounts(m, products);
-  if(isStale(seq)) return;
-  const sortedProducts = products.slice().sort(function(a, b){
-  const ca = counts[a] || {need:0, done:0, total:0};
-  const cb = counts[b] || {need:0, done:0, total:0};
+  try {
+    const data = await api('counts', {
+      client: state.client,
+      month: m
+    });
 
-  return (cb.need - ca.need)
-      || (ca.done - cb.done)
-      || (cb.total - ca.total)
-      || String(a).localeCompare(String(b), 'zh-Hant');
-});
-  $('productGrid').innerHTML = sortedProducts.map((p,i)=>{
-    const c = counts[p] || {need:0, done:0, total:0};
-    return `<div class="tile" onclick="safeNav(function(){ return chooseProduct('${esc(p)}') })">
-      <div class="icon">${['🛍️','💊','🧴','🍵','✨','🎯'][i%6]}</div>
-      <b>${html(p)}</b>
-      ${countHTML(c)}
-    </div>`;
-  }).join('') || '<div class="empty">無商品</div>';
+    if(isStale(seq)) return;
+
+    const counts = data.counts || {};
+    const products = Object.keys(counts);
+
+    const sortedProducts = products.slice().sort(function(a, b){
+      const ca = counts[a] || {need:0, done:0, total:0};
+      const cb = counts[b] || {need:0, done:0, total:0};
+
+      return (cb.need - ca.need)
+        || (ca.done - cb.done)
+        || (cb.total - ca.total)
+        || String(a).localeCompare(String(b), 'zh-Hant');
+    });
+
+    $('productGrid').innerHTML = sortedProducts.map((p,i)=>{
+      const c = counts[p] || {need:0, done:0, total:0};
+      return `<div class="tile" onclick="safeNav(function(){ return chooseProduct('${esc(p)}') })">
+        <div class="icon">${['🛍️','💊','🧴','🍵','✨','🎯'][i%6]}</div>
+        <b>${html(p)}</b>
+        ${countHTML(c)}
+      </div>`;
+    }).join('') || '<div class="empty">這個月份目前沒有商品任務</div>';
+
+  } catch(e) {
+    $('productGrid').innerHTML = `<div class="empty">統計失敗：${html(e.message)}</div>`;
+  } finally {
+    document.body.classList.remove('nav-busy');
+  }
 }
-
 async function chooseProduct(p){
-  if(navLock) return;
   const seq = ++navSeq;
 
   state.product = p;
@@ -318,7 +338,6 @@ async function chooseProduct(p){
 }
 
 async function chooseType(t){
-  if(navLock) return;
   const seq = ++navSeq;
 
   state.type = t;
@@ -369,14 +388,6 @@ async function loadTasks(seq){
   return result;
 }
 
-function mergeCount(a, b){
-  return {
-    need: (a.need || 0) + (b.need || 0),
-    done: (a.done || 0) + (b.done || 0),
-    total: (a.total || 0) + (b.total || 0)
-  };
-}
-
 function countHTML(c){
   if(!c || !c.total){
     return '<div class="countRow"><span class="countBadge countMuted">無任務</span></div>';
@@ -388,46 +399,36 @@ function countHTML(c){
     + '</div>';
 }
 
-async function fetchCount(month, product, type){
-  try{
-    const data = await api('data',{
-      client: state.client,
-      month: month,
-      product: product,
-      type: type
-    });
-    return countTasks(data.tasks || [], type);
-  }catch(e){
-    return {need:0, done:0, total:0};
-  }
-}
-
-async function buildProductCounts(month, products){
-  var result = {};
-
-  await Promise.all((products || []).map(async function(product){
-    var thread = await fetchCount(month, product, 'thread');
-    var video  = await fetchCount(month, product, 'video');
-    result[product] = mergeCount(thread, video);
-  }));
-
-  return result;
-}
-
 async function renderTypeCounts(seq){
-  const thread = await fetchCount(state.month, state.product, 'thread');
-  const video  = await fetchCount(state.month, state.product, 'video');
+  document.body.classList.add('nav-busy');
 
-  if(isStale(seq)) return;
+  try {
+    const data = await api('counts', {
+      client: state.client,
+      month: state.month
+    });
 
-  document.querySelector('button[onclick="chooseType(\'thread\')"]').innerHTML =
-    '<div style="font-size:32px;margin-bottom:8px">🧵</div><b>脆（Threads）</b><br><small style="color:inherit;opacity:.7">短文 / 圖片 / 留言</small>' + countHTML(thread);
+    if(isStale(seq)) return;
 
-  document.querySelector('button[onclick="chooseType(\'video\')"]').innerHTML =
-    '<div style="font-size:32px;margin-bottom:8px">🎬</div><b>影音</b><br><small style="color:inherit;opacity:.7">腳本 / 畫面說明</small>' + countHTML(video);
+    const productCount = (data.counts || {})[state.product] || {};
+    const thread = productCount.thread || {need:0, done:0, total:0};
+    const video  = productCount.video  || {need:0, done:0, total:0};
 
-  document.querySelector('button[onclick="chooseType(\'thread\')"]').setAttribute('onclick', "safeNav(function(){ return chooseType('thread') })");
-  document.querySelector('button[onclick="chooseType(\'video\')"]').setAttribute('onclick', "safeNav(function(){ return chooseType('video') })");
+    const threadBtn = document.querySelector('.typeBtn:nth-child(1)');
+    const videoBtn  = document.querySelector('.typeBtn:nth-child(2)');
+
+    threadBtn.innerHTML =
+      '<div style="font-size:32px;margin-bottom:8px">🧵</div><b>脆（Threads）</b><br><small style="color:inherit;opacity:.7">短文 / 圖片 / 留言</small>' + countHTML(thread);
+
+    videoBtn.innerHTML =
+      '<div style="font-size:32px;margin-bottom:8px">🎬</div><b>影音</b><br><small style="color:inherit;opacity:.7">腳本 / 畫面說明</small>' + countHTML(video);
+
+    threadBtn.setAttribute('onclick', "safeNav(function(){ return chooseType('thread') })");
+    videoBtn.setAttribute('onclick', "safeNav(function(){ return chooseType('video') })");
+
+  } finally {
+    document.body.classList.remove('nav-busy');
+  }
 }
 
 // ─── 狀態計算 ───────────────────────────────────────────────
@@ -691,12 +692,12 @@ function setGridError(gridId, msg){
   if(el) el.innerHTML = '<div class="empty">載入失敗：'+html(msg)+'</div>';
 }
 
-function goClientHome(){
+async function goClientHome(){
   state.month = '';
   state.product = '';
   state.type = '';
   history.pushState(null, '', location.pathname + '?client=' + encodeURIComponent(state.client));
-  loadMeta();
+  await loadMeta();
 }
 
 function goMonthPage(){
