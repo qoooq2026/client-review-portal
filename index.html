@@ -61,11 +61,15 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',sans-serif
 .countNeed{background:var(--accent-light);color:var(--accent)}
 .countDone{background:var(--main-light);color:var(--main)}
 .countMuted{background:#eee;color:#777}
-  .nav-busy .tile,
+.nav-busy .tile,
 .nav-busy .typeBtn,
 .nav-busy .crumb.link{
   pointer-events:none;
-  opacity:.55;
+}
+
+.nav-busy .tile,
+.nav-busy .typeBtn{
+  opacity:.82;
 }
 .typeGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .typeBtn{border:1.5px solid var(--line);border-radius:14px;background:var(--card);padding:24px;cursor:pointer;text-align:center;transition:.18s;font-family:inherit;color:var(--ink)}
@@ -203,7 +207,15 @@ textarea{min-height:96px;resize:vertical;line-height:1.6}
 <script>
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxBPxJSK_VPMQnPOfWvHTx2fkq9NgOgFegziTSPFiaS-J5-duSITKM8xdj7je6gDcE/exec';
 
-const state = { client:'', clientName:'', month:'', product:'', type:'', meta:null };
+const state = { 
+  client:'', 
+  clientName:'', 
+  month:'', 
+  product:'', 
+  type:'', 
+  meta:null,
+  countCache:{} 
+};
 const $ = id => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
 let navLock = false;
@@ -297,6 +309,7 @@ async function chooseMonth(m){
     if(isStale(seq)) return;
 
     const counts = data.counts || {};
+    state.countCache[m] = counts;
     const products = Object.keys(counts);
 
     const sortedProducts = products.slice().sort(function(a, b){
@@ -394,41 +407,47 @@ function countHTML(c){
   }
 
   return '<div class="countRow">'
-    + '<span class="countBadge countNeed">待確認 ' + c.need + '</span>'
-    + '<span class="countBadge countDone">已完成 ' + c.done + '</span>'
+    + '<span class="countBadge countNeed">待確認 ' + (c.need || 0) + '</span>'
+    + '<span class="countBadge countMuted">製作中 ' + (c.progress || 0) + '</span>'
+    + '<span class="countBadge countDone">已完成 ' + (c.done || 0) + '</span>'
     + '</div>';
 }
 
 async function renderTypeCounts(seq){
-  document.body.classList.add('nav-busy');
+  const threadBtn = document.querySelector('.typeBtn:nth-child(1)');
+  const videoBtn  = document.querySelector('.typeBtn:nth-child(2)');
 
-  try {
+  threadBtn.innerHTML =
+    '<div style="font-size:32px;margin-bottom:8px">🧵</div><b>脆（Threads）</b><br><small style="color:inherit;opacity:.7">數據載入中…</small>';
+
+  videoBtn.innerHTML =
+    '<div style="font-size:32px;margin-bottom:8px">🎬</div><b>影音</b><br><small style="color:inherit;opacity:.7">數據載入中…</small>';
+
+  let counts = state.countCache[state.month];
+
+  if(!counts){
     const data = await api('counts', {
       client: state.client,
       month: state.month
     });
-
-    if(isStale(seq)) return;
-
-    const productCount = (data.counts || {})[state.product] || {};
-    const thread = productCount.thread || {need:0, done:0, total:0};
-    const video  = productCount.video  || {need:0, done:0, total:0};
-
-    const threadBtn = document.querySelector('.typeBtn:nth-child(1)');
-    const videoBtn  = document.querySelector('.typeBtn:nth-child(2)');
-
-    threadBtn.innerHTML =
-      '<div style="font-size:32px;margin-bottom:8px">🧵</div><b>脆（Threads）</b><br><small style="color:inherit;opacity:.7">短文 / 圖片 / 留言</small>' + countHTML(thread);
-
-    videoBtn.innerHTML =
-      '<div style="font-size:32px;margin-bottom:8px">🎬</div><b>影音</b><br><small style="color:inherit;opacity:.7">腳本 / 畫面說明</small>' + countHTML(video);
-
-    threadBtn.setAttribute('onclick', "safeNav(function(){ return chooseType('thread') })");
-    videoBtn.setAttribute('onclick', "safeNav(function(){ return chooseType('video') })");
-
-  } finally {
-    document.body.classList.remove('nav-busy');
+    counts = data.counts || {};
+    state.countCache[state.month] = counts;
   }
+
+  if(isStale(seq)) return;
+
+  const productCount = counts[state.product] || {};
+  const thread = productCount.thread || {need:0, progress:0, done:0, total:0};
+  const video  = productCount.video  || {need:0, progress:0, done:0, total:0};
+
+  threadBtn.innerHTML =
+    '<div style="font-size:32px;margin-bottom:8px">🧵</div><b>脆（Threads）</b><br><small style="color:inherit;opacity:.7">短文 / 圖片 / 留言</small>' + countHTML(thread);
+
+  videoBtn.innerHTML =
+    '<div style="font-size:32px;margin-bottom:8px">🎬</div><b>影音</b><br><small style="color:inherit;opacity:.7">腳本 / 畫面說明</small>' + countHTML(video);
+
+  threadBtn.setAttribute('onclick', "safeNav(function(){ return chooseType('thread') })");
+  videoBtn.setAttribute('onclick', "safeNav(function(){ return chooseType('video') })");
 }
 
 // ─── 狀態計算 ───────────────────────────────────────────────
