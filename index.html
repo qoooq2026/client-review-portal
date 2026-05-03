@@ -195,7 +195,19 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxBPxJSK_VPMQnPOfWv
 const state = { client:'', clientName:'', month:'', product:'', type:'', meta:null };
 const $ = id => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
+let navLock = false;
 
+function safeNav(fn){
+  if(navLock) return;
+  navLock = true;
+  try {
+    fn();
+  } finally {
+    setTimeout(function(){
+      navLock = false;
+    }, 500);
+  }
+}
 init();
 async function init(){
   state.client = qs.get('client') || '';
@@ -589,7 +601,7 @@ function updateCrumbs(){
       return '<span class="crumb current">'+text+'</span>';
     }
 
-    return '<span class="crumb link" onclick="'+p.fn+'">'+text+'</span>';
+    return '<span class="crumb link" onclick="safeNav(function(){ '+p.fn+' })">'+text+'</span>';
   }).join('<span class="sep"> › </span>');
 }
 function toggleTask(id){$(id).classList.toggle('open');}
