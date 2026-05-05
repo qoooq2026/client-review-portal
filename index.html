@@ -587,6 +587,9 @@ function taskHTML(t, sheetName, id, ds, isPriority){
     + '<div class="body">'
     + '<div class="body-inner">'
     + '<div class="field"><div class="label">腳本內容</div><div class="value">'+html(t.content||'—')+'</div></div>'
+    + (state.type === 'video' && t.screenDescription
+      ? '<div class="field"><div class="label">畫面</div><div class="value">'+html(t.screenDescription)+'</div></div>'
+      : '')
     + (t.comment ? '<div class="field"><div class="label">留言</div><div class="value">'+html(t.comment)+'</div></div>' : '')
     + (t.feedback ? '<div class="field"><div class="label">上次回饋</div><div class="value" style="background:var(--accent-light);border-left:3px solid var(--accent)">'+html(t.feedback)+'</div></div>' : '')
     + (t.videoFeedback ? '<div class="field"><div class="label">影片回饋記錄</div><div class="value" style="background:var(--blue-light);border-left:3px solid var(--blue)">'+html(t.videoFeedback)+'</div></div>' : '')
