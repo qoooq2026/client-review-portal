@@ -552,7 +552,7 @@ function taskHTML(t, sheetName, id, ds, isPriority){
       videoSection = '<div class="action-video-zone">'
         + '<div class="action-video-title">🎬 影片確認</div>'
         + (hasVideo
-            ? '<a class="video-link" href="'+html(t.videoLink)+'" target="_blank">▶️ 開啟影片</a>'
+            ? videoLinksHTML(t.videoLink)
             : '<div style="color:var(--muted);font-size:13px;margin-bottom:10px">⏳ 影片製作中，尚未上傳</div>')
         + (hasVideo ? videoSelect : '')
         + '<textarea id="vfb-'+id+'" placeholder="影片回饋意見（可空白）">'+html(t.videoFeedback||'')+'</textarea>'
@@ -793,6 +793,25 @@ function closeLB(){$('lightbox').classList.remove('show');}
 function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');setTimeout(function(){$('toast').classList.remove('show');},3000);}
 function html(s){return String(s??'').replace(/[&<>"']/g,function(m){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]);});}
 function esc(s){return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+
+  function splitVideoLinks(raw){
+  return String(raw || '')
+    .split(/\s*\n+\s*|\s*,\s*/)
+    .map(function(s){ return s.trim(); })
+    .filter(function(s){ return /^https?:\/\//i.test(s); });
+}
+
+function videoLinksHTML(raw){
+  var links = splitVideoLinks(raw);
+  if(!links.length) return '';
+
+  return links.map(function(url, i){
+    var label = links.length === 1 ? '▶️ 開啟影片' : '▶️ 開啟影片 ' + (i + 1);
+    return '<a class="video-link" href="'+html(url)+'" target="_blank" rel="noopener">'+label+'</a>';
+  }).join('');
+}
+
+  
 </script>
 </body>
 </html>
