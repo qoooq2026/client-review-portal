@@ -625,8 +625,8 @@ function imgHTML(url){
     var thumb = 'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w800';
     return '<img class="img" src="'+html(thumb)+'" onclick="openLB(\''+esc(thumb)+'\')" loading="lazy">';
   }
-  // 其他連結
-  return '<a href="'+html(u)+'" target="_blank" style="font-size:12px;color:var(--blue)">開啟圖片</a>';
+  // 非 Google Drive 圖片連結不顯示
+  return '';
 }
 
 async function submitTask(ev, id, sheetName, taskId, submitKind){
