@@ -33,7 +33,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',sans-serif
 .top-logo{width:32px;height:32px;background:rgba(255,255,255,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
 .top h1{font-family:'Noto Serif TC',serif;font-size:17px;font-weight:700;letter-spacing:.02em}
 .top p{font-size:11px;opacity:.65;margin-top:1px}
-.wall-toggle{margin-left:auto;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;border-radius:10px;padding:8px 12px;font:700 13px/1 'Noto Sans TC',sans-serif;cursor:pointer;white-space:nowrap}
+.wall-toggle{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;border-radius:10px;padding:9px 12px;font:700 13px/1 'Noto Sans TC',sans-serif;cursor:pointer;white-space:nowrap}
 .wall-toggle:hover{background:rgba(255,255,255,.24)}
 .wall-toggle:disabled{opacity:.45;cursor:not-allowed}
 .wrap{max-width:860px;margin:0 auto;padding:20px 16px}
@@ -137,11 +137,11 @@ textarea{min-height:96px;resize:vertical;line-height:1.6}
 <body>
 <div class="top">
   <div class="top-logo">📋</div>
+    <button id="wallToggle" class="wall-toggle" onclick="toggleWall()" disabled>數據牆</button>
   <div>
     <h1 id="appTitle">內容確認系統</h1>
     <p>Content Review Portal</p>
   </div>
-  <button id="wallToggle" class="wall-toggle" onclick="toggleWall()" disabled>數據牆</button>
 </div>
 
 <div class="wrap">
