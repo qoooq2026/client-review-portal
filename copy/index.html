@@ -287,6 +287,7 @@ function gasAPI(action,params={}){
   Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v??''));
   return fetch(u).then(r=>r.json()).then(d=>{if(d.ok===false)throw new Error(d.error||'err');return d;});
 }
+// 讀單列 cache（meta / counts）
 function readCache(type,clientId,extra=''){
   return new Promise((res,rej)=>{
     if(!CACHE.enabled||!CACHE.spreadsheetId||!CACHE.sheetGid)return rej('no cfg');
@@ -301,7 +302,53 @@ function readCache(type,clientId,extra=''){
     sc.onerror=()=>{cleanup();rej('err');};sc.src=url;document.head.appendChild(sc);
   });
 }
+
+// 讀多列 cache（dashboard：dashboard_meta + 多個 dashboard_month）
+function readCacheMulti(clientId){
+  return new Promise((res,rej)=>{
+    if(!CACHE.enabled||!CACHE.spreadsheetId||!CACHE.sheetGid)return rej('no cfg');
+    const cb='ccm_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    // 讀該客戶所有 dashboard_meta 和 dashboard_month 列
+    const tq=`select B,C,D,E where A='${clientId}' and (B='dashboard_meta' or B='dashboard_month')`;
+    const url=`https://docs.google.com/spreadsheets/d/${CACHE.spreadsheetId}/gviz/tq?gid=${CACHE.sheetGid}&tq=${encodeURIComponent(tq)}&tqx=out:json;responseHandler:${cb}`;
+    const sc=document.createElement('script');
+    const t=setTimeout(()=>{cleanup();rej('timeout');},8000);
+    const cleanup=()=>{clearTimeout(t);sc.remove();delete window[cb];};
+    window[cb]=data=>{
+      cleanup();
+      const rows=data?.table?.rows||[];
+      if(!rows.length)return rej('nf');
+      try{
+        let meta=null; const monthMap={};
+        rows.forEach(r=>{
+          const type=r.c[0]?.v||'';
+          const json=JSON.parse(r.c[2]?.v||'{}');
+          const at=r.c[3]?.v||'';
+          if(type==='dashboard_meta'){meta=json;S.cacheAt=at;}
+          else if(type==='dashboard_month'&&json.month){monthMap[json.month]=json;}
+        });
+        if(!meta)return rej('no meta');
+        // 組合完整 dashboard 資料
+        const combined={
+          ok:true,
+          source:meta.source||'',
+          spreadsheetName:meta.spreadsheetName||'',
+          cachedAt:meta.cachedAt||'',
+          months:(meta.months||[]).map(m=>monthMap[m.month]||m)
+        };
+        res(combined);
+      }catch(e){rej(e);}
+    };
+    sc.onerror=()=>{cleanup();rej('err');};sc.src=url;document.head.appendChild(sc);
+  });
+}
+
 async function fetch2(type,action,params={}){
+  // dashboard 用新的多列讀取
+  if(type==='dashboard'){
+    try{const d=await readCacheMulti(S.client);setCachePill(S.cacheAt,false);return d;}
+    catch(_){const d=await gasAPI(action,params);setCachePill('',true);return d;}
+  }
   try{const d=await readCache(type,S.client,params.month||'');setCachePill(S.cacheAt,false);return d;}
   catch(_){const d=await gasAPI(action,params);setCachePill('',true);return d;}
 }
