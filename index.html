@@ -176,6 +176,10 @@ textarea{min-height:86px;resize:vertical;line-height:1.65}
 .mlink{font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 11px;border-radius:7px;text-decoration:none}
 .ml-post{background:var(--fl);color:var(--forest)}
 .ml-video{background:var(--blue-l);color:var(--blue)}
+.filter-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.ftab{border:1.5px solid var(--line);background:var(--bg2);color:var(--muted);border-radius:10px;padding:8px 20px;font:700 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:.18s}
+.ftab:hover{border-color:var(--forest);color:var(--forest)}
+.ftab.on{background:var(--forest);border-color:var(--forest);color:#fff}
 .cpill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 10px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .cpill.live{background:var(--done-l);color:var(--done)}
 .cpill.stale{background:var(--flame-l);color:var(--flame)}
@@ -254,6 +258,11 @@ textarea{min-height:86px;resize:vertical;line-height:1.65}
         <div><div class="ptitle">數據牆</div><div id="dashSub" class="psub" style="margin-top:2px"></div></div>
         <div id="cachePill" style="margin-top:6px"></div>
       </div>
+      <div class="filter-tabs">
+        <button class="ftab on" id="ftAll"    onclick="setFilter('all')">合併</button>
+        <button class="ftab"    id="ftThread" onclick="setFilter('脆')">Threads 脆</button>
+        <button class="ftab"    id="ftVideo"  onclick="setFilter('影音')">短影音</button>
+      </div>
       <div id="dashMetrics" class="dash-metrics"></div>
     </div>
     <div id="dashBody"><div class="loader">載入數據中…</div></div>
@@ -280,7 +289,7 @@ const CACHE={
 const S={
   client:'',clientName:'',month:'',product:'',type:'',
   meta:null,cc:{},
-  dashboard:null,dashLoading:false,dashReady:false,
+  dashboard:null,dashLoading:false,dashReady:false,dashFilter:'all',
   lastScene:'sMonth',cacheAt:''
 };
 const qs=new URLSearchParams(location.search);
@@ -634,6 +643,14 @@ async function toggleWall(){
   await loadDash();
 }
 
+function setFilter(f){
+  S.dashFilter=f;
+  ['ftAll','ftThread','ftVideo'].forEach(id=>$(id)?.classList.remove('on'));
+  if(f==='all')   $('ftAll')?.classList.add('on');
+  if(f==='脆')    $('ftThread')?.classList.add('on');
+  if(f==='影音')  $('ftVideo')?.classList.add('on');
+  if(S.dashboard) renderDash(S.dashboard);
+}
 async function loadDash(){
   $('dashSub').textContent=S.clientName+' · 客戶管理表';
   // 如果預載已完成直接渲染，不顯示 loader
@@ -655,18 +672,26 @@ function renderDash(data){
     $('dashBody').innerHTML=`<div class="empty">${h(data.message||'客戶管理表目前沒有資料')}</div>`;
     return;
   }
-  const tE=months.reduce((s,m)=>s+(m.totalExposure||0),0);
-  const tF=months.reduce((s,m)=>s+(m.totalFee||0),0);
-  const tT=months.reduce((s,m)=>s+(m.taskCount||0),0);
+  // 頂部彙總根據 filter 重算
+  const tE=months.reduce((s,m)=>{const f=S.dashFilter==='all'?m.tasks:(m.tasks||[]).filter(t=>t.projectType===S.dashFilter);return s+f.reduce((ss,t)=>ss+(t.exposure||0),0);},0);
+  const tF=months.reduce((s,m)=>{const f=S.dashFilter==='all'?m.tasks:(m.tasks||[]).filter(t=>t.projectType===S.dashFilter);return s+f.reduce((ss,t)=>ss+(t.fee||0),0);},0);
+  const tT=months.reduce((s,m)=>{const f=S.dashFilter==='all'?m.tasks:(m.tasks||[]).filter(t=>t.projectType===S.dashFilter);return s+f.length;},0);
   $('dashMetrics').innerHTML=`
     <div class="dm"><div class="dm-label">總曝光</div><div class="dm-val">${n(tE)}</div><div class="dm-sub">所有月份合計</div></div>
     <div class="dm"><div class="dm-label">總收費</div><div class="dm-val">$${n(tF)}</div><div class="dm-sub">所有月份合計</div></div>
     <div class="dm"><div class="dm-label">任務總數</div><div class="dm-val">${n(tT)}</div><div class="dm-sub">所有月份合計</div></div>`;
 
   $('dashBody').innerHTML=months.map((m,mi)=>{
+    // 先過濾再重算彙總（依 tab）
+    const allTasks=(m.tasks||[]).filter(t=>t.taskId||(t.exposure&&t.exposure>0)||t.postLink||t.videoLink||t.script);
+    const filteredForCalc=S.dashFilter==='all'?allTasks:allTasks.filter(t=>t.projectType===S.dashFilter);
+    if(!filteredForCalc.length)return''; // 這個月份在此 filter 下沒資料，跳過
+    const mE=filteredForCalc.reduce((s,t)=>s+(t.exposure||0),0);
+    const mF=filteredForCalc.reduce((s,t)=>s+(t.fee||0),0);
     const pm={};
-    const validTasks=(m.tasks||[]).filter(t=>t.taskId||(t.exposure&&t.exposure>0)||t.postLink||t.videoLink||t.script);
-    validTasks.forEach(t=>{
+    const allTasks=(m.tasks||[]).filter(t=>t.taskId||(t.exposure&&t.exposure>0)||t.postLink||t.videoLink||t.script);
+    const filteredTasks=S.dashFilter==='all'?allTasks:allTasks.filter(t=>t.projectType===S.dashFilter);
+    filteredTasks.forEach(t=>{
       const p=t.product||'未分類';
       if(!pm[p])pm[p]={name:p,tasks:[],tE:0,tF:0};
       pm[p].tasks.push(t);pm[p].tE+=t.exposure||0;pm[p].tF+=t.fee||0;
@@ -725,9 +750,9 @@ function renderDash(data){
 <div class="mhead" onclick="tog('mb${mi}','month-block')">
   <div class="m-label">${h(m.month)}</div>
   <div class="mpills">
-    <span class="mpill">曝光 <b>${n(m.totalExposure||0)}</b></span>
-    ${m.totalFee?`<span class="mpill">收費 <b>$${n(m.totalFee)}</b></span>`:''}
-    <span class="mpill">任務 <b>${m.taskCount||0}</b></span>
+    <span class="mpill">曝光 <b>${n(mE)}</b></span>
+    ${mF?`<span class="mpill">收費 <b>$${n(mF)}</b></span>`:''}
+    <span class="mpill">任務 <b>${filteredForCalc.length}</b></span>
     <span class="mpill"><b>${prods.length}</b> 商品</span>
   </div>
   <span class="mchev">›</span>
