@@ -1,817 +1,814 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <title>內容確認系統</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f5f1eb;
-  --card:#fdfaf5;
-  --ink:#1a1612;
-  --muted:#8a7f72;
-  --line:#e2d9cc;
-  --main:#2a5c45;
-  --main-light:#e8f0ec;
-  --accent:#c4843a;
-  --accent-light:#fdf0e3;
-  --red:#b5341a;
-  --red-light:#fdecea;
-  --blue:#1a5478;
-  --blue-light:#e8f1f7;
-  --gold:#8a6d20;
-  --gold-light:#fdf5e0;
-  --radius:14px;
-  --shadow:0 4px 20px rgba(0,0,0,.07);
+  --bg:#f4f0e8;--bg2:#fdfaf4;--bg3:#ede8de;
+  --ink:#17312C;--ink2:#2d4a44;--muted:#7a9e98;--line:#ddd7cc;
+  --forest:#17312C;--forest2:#1a3832;--fl:#e4eeea;
+  --flame:#F2735B;--flame2:#d9604a;--flame-l:#fdeee9;
+  --red:#b5341a;--red-l:#fdecea;
+  --blue:#1a5478;--blue-l:#e8f1f7;
+  --gold:#c47c2a;
+  --done:#1e6b42;--done-l:#e2f2ea;
+  --mono:'Space Mono',ui-monospace,monospace;
+  --serif:'Noto Serif TC',serif;
+  --sans:'Noto Sans TC',sans-serif;
+  --sh:0 2px 20px rgba(23,49,44,.09);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{overflow-x:hidden}
-body{background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',sans-serif;line-height:1.6;min-height:100vh;overflow-x:hidden;max-width:100vw}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65;min-height:100vh}
 
-/* TOP BAR */
-.top{background:var(--main);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.18)}
-.top-logo{width:32px;height:32px;background:rgba(255,255,255,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
-.top h1{font-family:'Noto Serif TC',serif;font-size:17px;font-weight:700;letter-spacing:.02em}
-.top p{font-size:11px;opacity:.65;margin-top:1px}
+/* ── TOP ── */
+.top{background:var(--forest);color:#fff;height:58px;display:flex;align-items:center;gap:14px;padding:0 28px;position:sticky;top:0;z-index:300;box-shadow:0 2px 24px rgba(0,0,0,.28)}
+.top-mark{width:34px;height:34px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.top-info{flex:1;min-width:0}
+.top-info h1{font-family:var(--serif);font-size:15px;font-weight:700;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-info p{font-family:var(--mono);font-size:9px;letter-spacing:.1em;opacity:.4;margin-top:1px;text-transform:uppercase}
+.wall-btn{border:1px solid rgba(255,255,255,.22);background:transparent;color:rgba(255,255,255,.8);border-radius:8px;padding:7px 16px;font:700 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:.2s}
+.wall-btn:hover{background:rgba(255,255,255,.14);color:#fff}
+.wall-btn:disabled{opacity:.25;cursor:not-allowed}
+.wall-btn.on{background:var(--flame);border-color:var(--flame);color:#fff}
 
-/* WRAP */
-.wrap{max-width:860px;margin:0 auto;padding:20px 16px}
+/* ── WRAP / CRUMBS ── */
+.wrap{max-width:920px;margin:0 auto;padding:22px 18px}
+.bc{display:flex;align-items:center;gap:3px;flex-wrap:wrap;margin-bottom:22px;min-height:38px}
+.crumb{display:flex;flex-direction:column;padding:5px 11px;border-radius:8px;transition:.15s;line-height:1.25;cursor:default}
+.crumb small{font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.crumb span{font-size:12px;font-weight:600;color:var(--ink)}
+.crumb.cur{background:rgba(23,49,44,.1)}
+.crumb.cur span{color:var(--forest)}
+.crumb.lnk{cursor:pointer}
+.crumb.lnk:hover{background:var(--fl)}
+.crumb.lnk:hover small,.crumb.lnk:hover span{color:var(--forest)}
+.csep{color:var(--line);font-size:18px;margin:0 -1px}
 
-/* BREADCRUMB */
-.bar{display:flex;align-items:center;gap:4px;margin-bottom:18px;flex-wrap:wrap}
-.crumb{font-size:12px;color:var(--muted);padding:3px 8px;border-radius:6px;transition:.15s}
-.crumb.current{color:var(--ink);font-weight:700;background:rgba(0,0,0,.05)}
-.crumb.link{cursor:pointer;text-decoration:underline;text-underline-offset:3px}
-.crumb.link:hover{color:var(--main);background:var(--main-light)}
-.sep{color:var(--line);font-size:14px}
+/* ── PANEL ── */
+.panel{background:var(--bg2);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh);padding:26px 24px;margin-bottom:16px}
+.ptitle{font-family:var(--serif);font-size:24px;font-weight:900;color:var(--forest);letter-spacing:-.01em;margin-bottom:4px}
+.psub{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:20px}
 
-/* PANEL */
-.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:16px}
-.title{font-family:'Noto Serif TC',serif;font-size:20px;font-weight:900;color:var(--main);margin-bottom:4px}
-.sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+/* ── TILE GRID ── */
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
+.tile{background:var(--bg2);border:1.5px solid var(--line);border-radius:13px;padding:20px 12px;text-align:center;cursor:pointer;transition:.2s;font-size:13px;font-weight:600;position:relative;overflow:hidden}
+.tile::after{content:'';position:absolute;inset:0;background:var(--forest);opacity:0;transition:.2s;border-radius:11px}
+.tile:hover::after{opacity:1}
+.tile:hover{border-color:var(--forest);transform:translateY(-2px);box-shadow:0 8px 24px rgba(23,49,44,.18);color:#fff}
+.tile-icon{font-size:26px;margin-bottom:10px;position:relative;z-index:1}
+.tile b{position:relative;z-index:1;display:block}
+.tcounts{display:flex;justify-content:center;gap:4px;margin-top:10px;flex-wrap:wrap;position:relative;z-index:1}
+.tcounts span{font-size:10px;border-radius:999px;padding:2px 8px;font-weight:700;font-family:var(--mono)}
+.cn{background:var(--flame-l);color:var(--flame)}
+.cp{background:#eee;color:#777}
+.cd{background:var(--done-l);color:var(--done)}
 
-/* GRID */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-.tile{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:16px 12px;text-align:center;cursor:pointer;transition:.18s;font-size:13px}
-.tile:hover{background:var(--main);border-color:var(--main);color:#fff;transform:translateY(-2px);box-shadow:0 6px 20px rgba(42,92,69,.2)}
-.tile .icon{font-size:24px;margin-bottom:6px}
-.countRow{display:flex;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap}
-.countBadge{font-size:11px;border-radius:999px;padding:2px 8px;font-weight:700}
-.countNeed{background:var(--accent-light);color:var(--accent)}
-.countDone{background:var(--main-light);color:var(--main)}
-.countMuted{background:#eee;color:#777}
-.nav-busy .tile,
-.nav-busy .typeBtn,
-.nav-busy .crumb.link{
-  pointer-events:none;
-}
+/* ── TYPE GRID ── */
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.type-btn{background:var(--bg2);border:1.5px solid var(--line);border-radius:16px;padding:32px 20px 24px;cursor:pointer;text-align:center;font-family:var(--sans);color:var(--ink);transition:.22s;position:relative;overflow:hidden}
+.type-btn::before{content:'';position:absolute;inset:0;background:var(--forest);opacity:0;transition:.22s}
+.type-btn:hover::before{opacity:1}
+.type-btn:hover{border-color:var(--forest);transform:translateY(-2px);box-shadow:0 8px 28px rgba(23,49,44,.2);color:#fff}
+.type-btn>*{position:relative;z-index:1}
+.type-icon{font-size:40px;margin-bottom:12px;display:block}
+.type-btn b{display:block;font-size:17px;font-weight:700;margin-bottom:5px}
+.type-btn small{font-size:11px;opacity:.65}
+.type-counts{display:flex;justify-content:center;gap:5px;margin-top:14px;flex-wrap:wrap}
 
-.nav-busy .tile,
-.nav-busy .typeBtn{
-  opacity:.82;
-}
-.typeGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.typeBtn{border:1.5px solid var(--line);border-radius:14px;background:var(--card);padding:24px;cursor:pointer;text-align:center;transition:.18s;font-family:inherit;color:var(--ink)}
-.typeBtn:hover{background:var(--main);color:#fff;border-color:var(--main);transform:translateY(-2px)}
-
-/* TASK CARD */
-.task{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow)}
-.task.priority{border-color:var(--main);border-width:2px}
-.task.done-section{opacity:.75;border-style:dashed}
-
-/* TASK HEAD */
-.taskHead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:13px 16px;cursor:pointer;user-select:none;transition:.15s}
-.taskHead:hover{background:rgba(0,0,0,.02)}
-.taskId{font-family:ui-monospace,monospace;font-size:11px;background:#f0ebe4;color:#7a6a58;border-radius:6px;padding:3px 7px}
-.persona{font-size:12px;color:var(--accent);font-weight:500}
-.grow{flex:1}
-.date{font-size:11px;color:var(--muted)}
-.chevron{font-size:14px;color:var(--muted);transition:transform .2s;margin-left:4px}
-.task.open .chevron{transform:rotate(90deg)}
-
-/* STATUS BADGE */
-.badge{font-size:11px;border-radius:20px;padding:3px 10px;font-weight:700;white-space:nowrap}
-.badge.pending{background:var(--gold-light);color:var(--gold)}
-.badge.need-action{background:var(--accent-light);color:var(--accent)}
-.badge.modify{background:var(--red-light);color:var(--red)}
-.badge.in-progress{background:#f0f0f0;color:#888}
-.badge.review{background:var(--blue-light);color:var(--blue)}
-.badge.ok{background:var(--main-light);color:var(--main)}
-
-/* STATUS LABEL ROW */
-.status-row{display:flex;align-items:center;gap:6px;padding:6px 16px 0;flex-wrap:wrap}
-.status-step{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
-.status-step .dot{width:6px;height:6px;border-radius:50%;background:var(--line)}
-.status-step.active .dot{background:var(--main)}
-.status-step.active{color:var(--main);font-weight:700}
-.status-step.done .dot{background:var(--muted)}
-
-/* TASK BODY */
-.body{display:none;border-top:1px solid var(--line)}
-.task.open .body{display:block}
-.body-inner{padding:16px}
+/* ── TASK CARDS ── */
+.task-card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden;box-shadow:var(--sh)}
+.task-card.prio{border-color:var(--flame);border-width:2px}
+.task-card.prio .thead{border-left:3px solid var(--flame)}
+.task-card.done-c{opacity:.7;border-style:dashed}
+.thead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:13px 16px;cursor:pointer;user-select:none;transition:.13s}
+.thead:hover{background:rgba(23,49,44,.03)}
+.tid{font-family:var(--mono);font-size:10px;background:var(--bg3);color:#7a6a58;border-radius:6px;padding:3px 7px}
+.persona{font-size:12px;color:var(--flame);font-weight:600}
+.tgrow{flex:1}
+.tdate{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.chev{font-size:16px;color:var(--muted);transition:transform .2s}
+.task-card.open .chev{transform:rotate(90deg)}
+.bdg{font-family:var(--mono);font-size:10px;border-radius:20px;padding:3px 10px;font-weight:700;white-space:nowrap;letter-spacing:.02em}
+.b-need{background:var(--flame-l);color:var(--flame)}
+.b-mod{background:var(--red-l);color:var(--red)}
+.b-prog{background:#eee;color:#888}
+.b-rev{background:var(--blue-l);color:var(--blue)}
+.b-ok{background:var(--done-l);color:var(--done)}
+.tbody{display:none;border-top:1px solid var(--line)}
+.task-card.open .tbody{display:block}
+.tinner{padding:18px}
 .field{margin-bottom:14px}
-.label{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
-.value{white-space:pre-wrap;word-break:break-word;background:#f7f3ed;border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.65;max-width:100%}
-.imgs{display:flex;gap:10px;flex-wrap:wrap;max-width:100%}
-.img{width:110px;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer;background:#eee;flex-shrink:0}
+.flabel{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px}
+.fval{white-space:pre-wrap;word-break:break-word;background:var(--bg3);border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.7}
+.fval.hi-f{background:var(--flame-l);border-left:3px solid var(--flame);border-radius:0 10px 10px 0}
+.fval.hi-b{background:var(--blue-l);border-left:3px solid var(--blue);border-radius:0 10px 10px 0}
+.imgs-row{display:flex;gap:10px;flex-wrap:wrap}
+.img-th{width:100px;height:100px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer;background:#eee;flex-shrink:0}
+.az{background:var(--bg3);border-top:1px solid var(--line);padding:16px}
+.az-title{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.avz{background:#edf3f7;border-top:1.5px dashed #c4d8e5;padding:16px}
+.avz-title{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--blue);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+select,textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:13px;padding:9px 12px;margin-bottom:10px;color:var(--ink);transition:.15s;appearance:auto}
+select:focus,textarea:focus{outline:none;border-color:var(--forest);box-shadow:0 0 0 3px rgba(23,49,44,.1)}
+textarea{min-height:86px;resize:vertical;line-height:1.65}
+.btn{border:0;border-radius:10px;background:var(--forest);color:#fff;font:700 11px/1 var(--mono);padding:11px 22px;cursor:pointer;transition:.18s;letter-spacing:.05em;text-transform:uppercase}
+.btn:hover{background:var(--forest2);transform:translateY(-1px)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-blue{background:var(--blue)}.btn-blue:hover{background:#13405d}
+.vlink{display:inline-flex;align-items:center;gap:8px;background:var(--blue-l);color:var(--blue);border-radius:9px;padding:9px 14px;font:700 11px/1 var(--mono);text-decoration:none;margin-bottom:10px}
+.vlink:hover{background:#d0e5f0}
+.done-div{display:flex;align-items:center;gap:10px;margin:22px 0 10px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.done-div::after{content:'';flex:1;height:1px;background:var(--line)}
 
-/* ACTION ZONE */
-.action-zone{background:#f9f6f1;border-top:1px solid var(--line);padding:16px}
-.action-zone-title{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.06em;margin-bottom:12px;text-transform:uppercase}
-.action-video-zone{background:#f0f5f8;border-top:1.5px dashed #ccd8e0;padding:16px;margin-top:0}
-.action-video-title{font-size:12px;font-weight:800;color:var(--blue);letter-spacing:.06em;margin-bottom:12px}
+/* ── DASHBOARD ── */
+.dash-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:0}
+.dm{background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:16px 18px}
+.dm-label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.dm-val{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--forest);line-height:1.1}
+.dm-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.month-block{background:var(--bg2);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:var(--sh)}
+.mhead{display:flex;align-items:center;gap:16px;padding:20px 24px;cursor:pointer;user-select:none;transition:.15s;position:relative}
+.mhead::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--flame);border-radius:0 2px 2px 0;transform:scaleY(0);transition:.25s;transform-origin:bottom}
+.month-block.open .mhead::before{transform:scaleY(1)}
+.mhead:hover{background:rgba(23,49,44,.03)}
+.m-label{font-family:var(--serif);font-size:21px;font-weight:900;color:var(--forest)}
+.mpills{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+.mpill{font-family:var(--mono);font-size:10px;font-weight:700;background:var(--bg3);color:var(--ink2);border-radius:999px;padding:4px 12px}
+.mpill b{color:var(--forest)}
+.mchev{font-size:16px;color:var(--muted);transition:transform .2s;margin-left:auto;flex-shrink:0}
+.month-block.open .mchev{transform:rotate(90deg)}
+.mbody{display:none;border-top:1px solid var(--line)}
+.month-block.open .mbody{display:block}
+.pt-wrap{overflow-x:auto}
+.pt{width:100%;border-collapse:collapse;font-size:13px}
+.pt th{font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;padding:12px 14px 8px;text-align:left;border-bottom:1px solid var(--line)}
+.pt td{padding:11px 14px;border-bottom:1px solid rgba(0,0,0,.04);vertical-align:middle}
+.prod-row{cursor:pointer;transition:.13s}
+.prod-row:hover td,.prod-row.act td{background:var(--fl)}
+.prod-row:last-of-type td{border-bottom:none}
+.rank{font-family:var(--mono);font-size:12px;font-weight:700;width:24px;display:inline-block;text-align:center}
+.r1{color:var(--flame);font-size:15px}.r2{color:var(--gold)}.r3{color:var(--muted)}
+.bar-bg{background:var(--bg3);border-radius:3px;height:5px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle}
+.bar-fg{height:5px;background:var(--forest);border-radius:3px;min-width:3px}
+.ptag{font-family:var(--mono);font-size:10px;background:var(--bg3);border-radius:6px;padding:3px 8px;color:var(--ink2);display:inline-block;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exp-n{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--forest)}
+.fee-n{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.pexp-tr{display:none}
+.pexp-tr.open{display:table-row}
+.pexp-td{padding:0;background:var(--fl)}
+.mini-list{display:flex;flex-direction:column;gap:8px;padding:14px 16px}
+.mini-card{background:var(--bg2);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.mini-head{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;transition:.13s}
+.mini-head:hover{background:var(--bg3)}
+.mini-body{display:none;border-top:1px solid var(--line);padding:14px;background:#fafaf6}
+.mini-card.open .mini-body{display:block}
+.mini-card.open .mc{transform:rotate(90deg)}
+.mc{font-size:14px;color:var(--muted);transition:transform .2s}
+.scr-txt{font-size:12px;line-height:1.7;color:var(--ink2);white-space:pre-wrap;word-break:break-word;max-height:100px;overflow:hidden}
+.scr-txt.exp{max-height:none}
+.scr-more{font-family:var(--mono);font-size:10px;color:var(--forest);cursor:pointer;text-decoration:underline;margin-top:4px;display:inline-block}
+.mini-img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer;background:#eee}
+.mini-links{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.mlink{font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 11px;border-radius:7px;text-decoration:none}
+.ml-post{background:var(--fl);color:var(--forest)}
+.ml-video{background:var(--blue-l);color:var(--blue)}
+.cpill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 10px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.cpill.live{background:var(--done-l);color:var(--done)}
+.cpill.stale{background:var(--flame-l);color:var(--flame)}
+.cdot{width:6px;height:6px;border-radius:50%;background:currentColor}
 
-select,textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:14px;padding:10px 12px;margin-bottom:10px;color:var(--ink);transition:.15s;appearance:auto}
-select:focus,textarea:focus{outline:none;border-color:var(--main);box-shadow:0 0 0 3px rgba(42,92,69,.1)}
-textarea{min-height:96px;resize:vertical;line-height:1.6}
-
-.btn{border:0;border-radius:10px;background:var(--main);color:#fff;font:700 13px/1 'Noto Sans TC',sans-serif;padding:11px 20px;cursor:pointer;transition:.18s;letter-spacing:.02em}
-.btn:hover{background:#1d4532;transform:translateY(-1px)}
-.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.btn-video{background:var(--blue)}
-.btn-video:hover{background:#13405d}
-.btn-sm{font-size:12px;padding:8px 14px;background:transparent;border:1.5px solid var(--line);color:var(--muted);border-radius:8px}
-.btn-sm:hover{border-color:var(--main);color:var(--main);background:var(--main-light)}
-
-/* VIDEO LINK */
-.video-link{display:inline-flex;align-items:center;gap:8px;background:var(--blue-light);color:var(--blue);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;text-decoration:none;margin-bottom:10px}
-.video-link:hover{background:#d0e5f2}
-
-/* SECTION DIVIDER */
-.section-done{margin-top:24px;margin-bottom:8px}
-.section-done-label{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:700;display:flex;align-items:center;gap:8px}
-.section-done-label::after{content:'';flex:1;height:1px;background:var(--line)}
-
-.hidden{display:none}
-.loader{padding:48px;text-align:center;color:var(--muted);font-size:14px}
-.empty{text-align:center;color:var(--muted);padding:42px;font-size:14px}
-
-/* TOAST */
-.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(8px);background:#1a1612;color:#fff;padding:11px 18px;border-radius:12px;opacity:0;transition:.25s;z-index:200;font-size:13px;max-width:88vw;text-align:center}
+.hidden{display:none!important}
+.loader{padding:50px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:12px;letter-spacing:.05em}
+.empty{text-align:center;color:var(--muted);padding:44px;font-size:13px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(10px);background:var(--forest);color:#fff;padding:11px 20px;border-radius:12px;opacity:0;transition:.22s;z-index:999;font:700 12px/1 var(--mono);max-width:88vw;text-align:center;letter-spacing:.03em}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-/* LIGHTBOX */
-.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;place-items:center;z-index:300;cursor:pointer}
-.lightbox.show{display:grid}
-.lightbox img{max-width:92vw;max-height:90vh;border-radius:10px}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;place-items:center;z-index:999;cursor:pointer}
+.lb.show{display:grid}
+.lb img{max-width:92vw;max-height:90vh;border-radius:10px}
 
 @media(max-width:600px){
-  .wrap{padding:14px 12px}
-  .typeGrid{grid-template-columns:1fr}
-  .grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
-  .taskHead{flex-wrap:wrap}
-  .date{font-size:10px}
-  textarea{min-height:80px}
+  .top{padding:0 14px}.wrap{padding:14px 12px}
+  .dash-metrics{grid-template-columns:1fr 1fr}
+  .dash-metrics .dm:nth-child(3){grid-column:span 2}
+  .type-grid{grid-template-columns:1fr}
+  .tgrid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+  .pt th:nth-child(4),.pt td:nth-child(4){display:none}
+  .mhead{padding:16px} textarea{min-height:72px}
 }
 </style>
 </head>
 <body>
 <div class="top">
-  <div class="top-logo">📋</div>
-  <div>
+  <div class="top-mark">📋</div>
+  <div class="top-info">
     <h1 id="appTitle">內容確認系統</h1>
-    <p>Content Review Portal</p>
+    <p>Content Review Portal · QoooQ</p>
   </div>
+  <button id="wallBtn" class="wall-btn" onclick="toggleWall()" disabled>數據牆</button>
 </div>
+
 <div class="wrap">
-  <div id="crumbs" class="bar"></div>
+  <div id="bc" class="bc"></div>
 
-  <section id="sceneClient" class="panel hidden">
-    <h2 class="title">選擇客戶</h2><div class="sub">內部測試用；正式給客戶時請用 ?client=客戶代號</div><div id="clientGrid" class="grid"></div>
+  <section id="sClient" class="panel hidden">
+    <div class="ptitle">選擇客戶</div><div class="psub">Select Client</div>
+    <div id="clientGrid" class="tgrid"></div>
   </section>
 
-  <section id="sceneMonth" class="panel hidden">
-    <h2 class="title">選擇月份</h2><div class="sub">請選擇要確認的發布月份</div><div id="monthGrid" class="grid"></div>
+  <section id="sMonth" class="panel hidden">
+    <div class="ptitle">選擇月份</div><div class="psub">Select Month</div>
+    <div id="monthGrid" class="tgrid"></div>
   </section>
 
-  <section id="sceneProduct" class="panel hidden">
-    <h2 class="title">選擇商品</h2><div id="productSub" class="sub"></div><div id="productGrid" class="grid"></div>
+  <section id="sProduct" class="panel hidden">
+    <div class="ptitle">選擇商品</div><div id="prodSub" class="psub"></div>
+    <div id="productGrid" class="tgrid"></div>
   </section>
 
-  <section id="sceneType" class="panel hidden">
-    <h2 class="title">選擇內容類型</h2><div id="typeSub" class="sub"></div>
-    <div class="typeGrid">
-      <button class="typeBtn" onclick="chooseType('thread')"><div style="font-size:32px;margin-bottom:8px">🧵</div><b>脆（Threads）</b><br><small style="color:inherit;opacity:.7">短文 / 圖片 / 留言</small></button>
-      <button class="typeBtn" onclick="chooseType('video')"><div style="font-size:32px;margin-bottom:8px">🎬</div><b>影音</b><br><small style="color:inherit;opacity:.7">腳本 / 畫面說明</small></button>
+  <section id="sType" class="panel hidden">
+    <div class="ptitle">選擇內容類型</div><div id="typeSub" class="psub"></div>
+    <div class="type-grid">
+      <button class="type-btn" onclick="safeNav(()=>chooseType('thread'))">
+        <span class="type-icon">🧵</span><b>脆（Threads）</b><small>短文・圖片・留言</small>
+        <div class="type-counts" id="cntThread"></div>
+      </button>
+      <button class="type-btn" onclick="safeNav(()=>chooseType('video'))">
+        <span class="type-icon">🎬</span><b>影音</b><small>腳本・畫面說明</small>
+        <div class="type-counts" id="cntVideo"></div>
+      </button>
     </div>
   </section>
 
-  <section id="sceneTasks" class="panel hidden">
-    <h2 id="taskTitle" class="title"></h2><div id="taskSub" class="sub"></div><div id="taskList"></div>
+  <section id="sTasks" class="panel hidden">
+    <div id="taskTitle" class="ptitle"></div><div id="taskSub" class="psub"></div>
+    <div id="taskList"></div>
+  </section>
+
+  <section id="sDash" class="hidden">
+    <div class="panel" style="margin-bottom:14px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px">
+        <div><div class="ptitle">數據牆</div><div id="dashSub" class="psub" style="margin-top:2px"></div></div>
+        <div id="cachePill" style="margin-top:6px"></div>
+      </div>
+      <div id="dashMetrics" class="dash-metrics"></div>
+    </div>
+    <div id="dashBody"><div class="loader">載入數據中…</div></div>
   </section>
 </div>
+
 <div id="toast" class="toast"></div>
-<div id="lightbox" class="lightbox" onclick="closeLB()"><img id="lbImg" alt="preview"></div>
+<div id="lb" class="lb" onclick="closeLB()"><img id="lbImg" alt=""></div>
+
 <script>
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxBPxJSK_VPMQnPOfWvHTx2fkq9NgOgFegziTSPFiaS-J5-duSITKM8xdj7je6gDcE/exec';
-
-const state = { 
-  client:'', 
-  clientName:'', 
-  month:'', 
-  product:'', 
-  type:'', 
-  meta:null,
-  countCache:{} 
+/* ══════════════════════════════════════════
+   CONFIG — 填入你的設定
+══════════════════════════════════════════ */
+const GAS='https://script.google.com/macros/s/AKfycbxBPxJSK_VPMQnPOfWvHTx2fkq9NgOgFegziTSPFiaS-J5-duSITKM8xdj7je6gDcE/exec';
+const CACHE={
+  spreadsheetId:'1KN763aASlO8s0H99xjvHd2Z4y8qYzQ_TPMS1uiyb3MU',
+  sheetGid:'1848381448',
+  enabled:true
 };
-const $ = id => document.getElementById(id);
-const qs = new URLSearchParams(location.search);
-let navLock = false;
-let navSeq = 0;
 
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+const S={
+  client:'',clientName:'',month:'',product:'',type:'',
+  meta:null,cc:{},
+  dashboard:null,dashLoading:false,dashReady:false,
+  lastScene:'sMonth',cacheAt:''
+};
+const qs=new URLSearchParams(location.search);
+const $=id=>document.getElementById(id);
+let navLock=false,navSeq=0;
+
+/* ══════════════════════════════════════════
+   INIT — 確認 + 數據牆同時預載
+══════════════════════════════════════════ */
+(async()=>{
+  S.client=qs.get('client')||'';
+  if(!S.client) return loadClients();
+  // 並行：loadMeta 和 prefetchDash 同時跑
+  await Promise.all([loadMeta(), prefetchDash()]);
+})();
+
+/* ══════════════════════════════════════════
+   GAS API
+══════════════════════════════════════════ */
+function gasAPI(action,params={}){
+  const u=new URL(GAS);
+  u.searchParams.set('action',action);
+  Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v??''));
+  return fetch(u).then(r=>r.json()).then(d=>{if(d.ok===false)throw new Error(d.error||'err');return d;});
+}
+
+/* ══════════════════════════════════════════
+   CACHE — 單列讀取（meta / counts）
+══════════════════════════════════════════ */
+function readCache(type,clientId,extra=''){
+  return new Promise((res,rej)=>{
+    if(!CACHE.enabled||!CACHE.spreadsheetId||!CACHE.sheetGid)return rej('no cfg');
+    const cb='cc_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    const key=extra?clientId+'|'+extra:clientId;
+    const tq=`select D,E where A='${clientId}' and B='${type}' and C='${key}' limit 1`;
+    const url=`https://docs.google.com/spreadsheets/d/${CACHE.spreadsheetId}/gviz/tq?gid=${CACHE.sheetGid}&tq=${encodeURIComponent(tq)}&tqx=out:json;responseHandler:${cb}`;
+    const sc=document.createElement('script');
+    const t=setTimeout(()=>{cleanup();rej('timeout');},6000);
+    const cleanup=()=>{clearTimeout(t);sc.remove();delete window[cb];};
+    window[cb]=data=>{
+      cleanup();
+      const rows=data?.table?.rows||[];
+      if(!rows.length)return rej('nf');
+      try{S.cacheAt=rows[0].c[1]?.v||'';res(JSON.parse(rows[0].c[0].v));}
+      catch(e){rej(e);}
+    };
+    sc.onerror=()=>{cleanup();rej('err');};
+    sc.src=url;document.head.appendChild(sc);
+  });
+}
+
+/* ══════════════════════════════════════════
+   CACHE — 多列讀取（dashboard）
+══════════════════════════════════════════ */
+function readCacheMulti(clientId){
+  return new Promise((res,rej)=>{
+    if(!CACHE.enabled||!CACHE.spreadsheetId||!CACHE.sheetGid)return rej('no cfg');
+    const cb='ccm_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    const tq=`select B,C,D,E where A='${clientId}' and (B='dashboard_meta' or B='dashboard_month')`;
+    const url=`https://docs.google.com/spreadsheets/d/${CACHE.spreadsheetId}/gviz/tq?gid=${CACHE.sheetGid}&tq=${encodeURIComponent(tq)}&tqx=out:json;responseHandler:${cb}`;
+    const sc=document.createElement('script');
+    const t=setTimeout(()=>{cleanup();rej('timeout');},8000);
+    const cleanup=()=>{clearTimeout(t);sc.remove();delete window[cb];};
+    window[cb]=data=>{
+      cleanup();
+      const rows=data?.table?.rows||[];
+      if(!rows.length)return rej('nf');
+      try{
+        let meta=null;const monthMap={};
+        rows.forEach(r=>{
+          const type=r.c[0]?.v||'';
+          const json=JSON.parse(r.c[2]?.v||'{}');
+          const at=r.c[3]?.v||'';
+          if(type==='dashboard_meta'){meta=json;S.cacheAt=at;}
+          else if(type==='dashboard_month'&&json.month){monthMap[json.month]=json;}
+        });
+        if(!meta)return rej('no meta');
+        res({ok:true,source:meta.source||'',spreadsheetName:meta.spreadsheetName||'',cachedAt:meta.cachedAt||'',
+          months:(meta.months||[]).map(m=>monthMap[m.month]||m)});
+      }catch(e){rej(e);}
+    };
+    sc.onerror=()=>{cleanup();rej('err');};
+    sc.src=url;document.head.appendChild(sc);
+  });
+}
+
+/* ══════════════════════════════════════════
+   FETCH2 — Cache 優先，失敗 fallback GAS
+   注意：dashboard 走多列讀取；data（任務）永遠走 GAS（需要即時）
+══════════════════════════════════════════ */
+async function fetch2(type,action,params={}){
+  if(type==='dashboard'){
+    try{const d=await readCacheMulti(S.client);setCachePill(S.cacheAt,false);return d;}
+    catch(_){const d=await gasAPI(action,params);setCachePill('',true);return d;}
+  }
+  try{const d=await readCache(type,S.client,params.month||'');setCachePill(S.cacheAt,false);return d;}
+  catch(_){const d=await gasAPI(action,params);setCachePill('',true);return d;}
+}
+
+function setCachePill(at,live){
+  const el=$('cachePill');if(!el)return;
+  if(live){el.innerHTML='<div class="cpill stale"><div class="cdot"></div>Live</div>';return;}
+  if(at){const m=Math.round((Date.now()-new Date(at))/60000);el.innerHTML=`<div class="cpill live"><div class="cdot"></div>Cache · ${m<1?'剛更新':m+'m 前'}</div>`;}
+}
+
+/* ══════════════════════════════════════════
+   NAV UTILS
+══════════════════════════════════════════ */
 async function safeNav(fn){
-  if(navLock) return;
-  navLock = true;
-  document.body.classList.add('nav-busy');
-  try {
-    await fn();
-  } finally {
-    setTimeout(function(){
-      navLock = false;
-      document.body.classList.remove('nav-busy');
-    }, 300);
-  }
+  if(navLock)return;navLock=true;document.body.style.opacity='.96';
+  try{await fn();}finally{setTimeout(()=>{navLock=false;document.body.style.opacity='';},260);}
 }
+const stale=seq=>seq!==navSeq;
+function showOnly(id){['sClient','sMonth','sProduct','sType','sTasks','sDash'].forEach(s=>$(s)?.classList[s===id?'remove':'add']('hidden'));}
 
-function isStale(seq){
-  return seq !== navSeq;
-}
-init();
-async function init(){
-  state.client = qs.get('client') || '';
-  if(!GAS_API_URL || GAS_API_URL.includes('PASTE_')){
-  showOnly('sceneMonth');
-  setGridError('monthGrid', '請先設定 GAS_API_URL');
-  return;
-}
-  if(!state.client) return loadClients();
-  await loadMeta();
-}
-async function api(action, params={}){
-  const url = new URL(GAS_API_URL);
-  url.searchParams.set('action', action);
-  Object.keys(params).forEach(k => url.searchParams.set(k, params[k] ?? ''));
-  const res = await fetch(url.toString(), { method:'GET' });
-  const data = await res.json();
-  if(data.ok === false) throw new Error(data.error || 'API error');
-  return data;
-}
+/* ══════════════════════════════════════════
+   CLIENTS
+══════════════════════════════════════════ */
 async function loadClients(){
-  showOnly('sceneClient');
-  setGridLoading('clientGrid', '載入中…');
+  showOnly('sClient');$('clientGrid').innerHTML='<div class="loader">載入中…</div>';
   try{
-    const data = await api('clients');
-    $('clientGrid').innerHTML = data.clients.map(c=>`<div class="tile" onclick="chooseClient('${esc(c.clientId)}','${esc(c.clientName)}')"><div class="icon">🏷️</div><b>${html(c.clientName||c.clientId)}</b></div>`).join('') || '<div class="empty">沒有啟用客戶</div>';
-    showOnly('sceneClient'); updateCrumbs();
-  }catch(e){
-  showOnly('sceneClient');
-  setGridError('clientGrid', e.message);
+    const d=await gasAPI('clients');
+    $('clientGrid').innerHTML=d.clients.map(c=>`<div class="tile" onclick="safeNav(()=>chooseClient('${esc(c.clientId)}','${esc(c.clientName)}'))"><div class="tile-icon">🏷️</div><b>${h(c.clientName||c.clientId)}</b></div>`).join('')||'<div class="empty">沒有啟用客戶</div>';
+    crumbs();
+  }catch(e){$('clientGrid').innerHTML=`<div class="empty">載入失敗：${h(e.message)}</div>`;}
 }
+async function chooseClient(id,name){
+  S.client=id;S.clientName=name;S.dashboard=null;S.dashReady=false;
+  history.replaceState(null,'',location.pathname+'?client='+encodeURIComponent(id));
+  // 換客戶時也同時預載數據牆
+  await Promise.all([loadMeta(), prefetchDash()]);
 }
-async function chooseClient(id, name){ state.client=id; state.clientName=name; history.replaceState(null,'',location.pathname+'?client='+encodeURIComponent(id)); await loadMeta(); }
+
+/* ══════════════════════════════════════════
+   META / MONTH
+══════════════════════════════════════════ */
 async function loadMeta(){
+  showOnly('sMonth');$('monthGrid').innerHTML='<div class="loader">載入月份…</div>';
   try{
-    const data = await api('meta',{client:state.client});
-    state.meta=data; state.clientName=(data.client&&data.client.clientName)||state.client;
-    $('appTitle').textContent=state.clientName+'｜內容確認系統';
-$('monthGrid').innerHTML=(data.months||[]).length
-  ? data.months.map(m=>`<div class="tile" onclick="safeNav(function(){ return chooseMonth('${esc(m)}') })"><div class="icon">📅</div><b>${html(m)}</b></div>`).join('')
-  : '<div class="empty">目前沒有月份資料</div>';
-    showOnly('sceneMonth'); updateCrumbs();
-  }catch(e){
-    showOnly('sceneMonth');
-  setGridError('monthGrid', e.message);
-  }
+    const d=await fetch2('meta','meta',{client:S.client});
+    S.meta=d;S.clientName=d.client?.clientName||S.client;
+    $('appTitle').textContent=S.clientName+'｜內容確認';
+    $('wallBtn').disabled=false;
+    $('monthGrid').innerHTML=(d.months||[]).length
+      ?d.months.map(m=>`<div class="tile" onclick="safeNav(()=>chooseMonth('${esc(m)}'))"><div class="tile-icon">📅</div><b>${h(m)}</b></div>`).join('')
+      :'<div class="empty">目前沒有月份資料</div>';
+    crumbs();
+  }catch(e){$('monthGrid').innerHTML=`<div class="empty">載入失敗：${h(e.message)}</div>`;}
 }
+
 async function chooseMonth(m){
-  const seq = ++navSeq;
-
-  state.month = m;
-  state.product = '';
-  state.type = '';
-
-  document.body.classList.add('nav-busy');
-
-  $('productSub').textContent = '月份：' + m;
-  $('productGrid').innerHTML = '<div class="loader">統計商品任務中…</div>';
-
-  showOnly('sceneProduct');
-  updateCrumbs();
-
-  try {
-    const data = await api('counts', {
-      client: state.client,
-      month: m
-    });
-
-    if(isStale(seq)) return;
-
-    const counts = data.counts || {};
-    state.countCache[m] = counts;
-    const products = Object.keys(counts);
-
-    const sortedProducts = products.slice().sort(function(a, b){
-      const ca = counts[a] || {need:0, done:0, total:0};
-      const cb = counts[b] || {need:0, done:0, total:0};
-
-      return (cb.need - ca.need)
-        || (ca.done - cb.done)
-        || (cb.total - ca.total)
-        || String(a).localeCompare(String(b), 'zh-Hant');
-    });
-
-    $('productGrid').innerHTML = sortedProducts.map((p,i)=>{
-      const c = counts[p] || {need:0, done:0, total:0};
-      return `<div class="tile" onclick="safeNav(function(){ return chooseProduct('${esc(p)}') })">
-        <div class="icon">${['🛍️','💊','🧴','🍵','✨','🎯'][i%6]}</div>
-        <b>${html(p)}</b>
-        ${countHTML(c)}
-      </div>`;
-    }).join('') || '<div class="empty">這個月份目前沒有商品任務</div>';
-
-  } catch(e) {
-    $('productGrid').innerHTML = `<div class="empty">統計失敗：${html(e.message)}</div>`;
-  } finally {
-    document.body.classList.remove('nav-busy');
-  }
+  const seq=++navSeq;S.month=m;S.product='';S.type='';
+  $('prodSub').textContent='月份 · '+m;
+  $('productGrid').innerHTML='<div class="loader">統計中…</div>';
+  showOnly('sProduct');crumbs();
+  try{
+    const d=await fetch2('counts','counts',{client:S.client,month:m});
+    if(stale(seq))return;
+    const c=d.counts||{};S.cc[m]=c;
+    const icons=['🛍️','💊','🧴','🍵','✨','🎯','🌿','💎'];
+    const ps=Object.keys(c).sort((a,b)=>{const ca=c[a]||{},cb=c[b]||{};return(cb.need-ca.need)||(ca.done-cb.done)||(cb.total-ca.total)||a.localeCompare(b,'zh-Hant');});
+    $('productGrid').innerHTML=ps.map((p,i)=>{
+      const ci=c[p]||{};
+      return`<div class="tile" onclick="safeNav(()=>chooseProduct('${esc(p)}'))"><div class="tile-icon">${icons[i%icons.length]}</div><b>${h(p)}</b><div class="tcounts">${cbadges(ci)}</div></div>`;
+    }).join('')||'<div class="empty">這個月份目前沒有商品任務</div>';
+  }catch(e){$('productGrid').innerHTML=`<div class="empty">統計失敗：${h(e.message)}</div>`;}
 }
+
+function cbadges(c){
+  if(!c?.total)return'<span class="cp" style="font-size:10px;border-radius:999px;padding:2px 8px">無任務</span>';
+  return`<span class="cn">${c.need||0} 待確認</span><span class="cp">${c.progress||0} 製作中</span><span class="cd">${c.done||0} 完成</span>`;
+}
+
+/* ══════════════════════════════════════════
+   PRODUCT / TYPE
+══════════════════════════════════════════ */
 async function chooseProduct(p){
-  const seq = ++navSeq;
-
-  state.product = p;
-  state.type = '';
-
-  $('typeSub').textContent = state.month + ' · ' + state.product;
-  showOnly('sceneType');
-  updateCrumbs();
-
-  await renderTypeCounts(seq);
+  const seq=++navSeq;S.product=p;S.type='';
+  $('typeSub').textContent=S.month+' · '+p;
+  $('cntThread').innerHTML=$('cntVideo').innerHTML='<span class="cp" style="font-size:10px;border-radius:999px;padding:2px 8px">載入中</span>';
+  showOnly('sType');crumbs();
+  let c=S.cc[S.month];
+  if(!c){
+    try{const d=await fetch2('counts','counts',{client:S.client,month:S.month});c=d.counts||{};S.cc[S.month]=c;}
+    catch(_){c={};}
+  }
+  if(stale(seq))return;
+  const pc=c[S.product]||{};
+  $('cntThread').innerHTML=cbadges(pc.thread||{need:0,progress:0,done:0,total:0});
+  $('cntVideo').innerHTML=cbadges(pc.video||{need:0,progress:0,done:0,total:0});
 }
 
 async function chooseType(t){
-  const seq = ++navSeq;
-
-  state.type = t;
-  showOnly('sceneTasks');
-  updateCrumbs();
-
-  await loadTasks(seq);
-}
-
-async function loadTasks(seq){
-  $('taskTitle').textContent = state.type === 'thread' ? '脆（Threads）確認' : '影音確認';
-  $('taskSub').textContent = `${state.month} · ${state.product}`;
-  $('taskList').innerHTML = '<div class="loader">載入任務中…</div>';
-
+  const seq=++navSeq;S.type=t;
+  $('taskTitle').textContent=t==='thread'?'脆（Threads）確認':'影音確認';
+  $('taskSub').textContent=S.month+' · '+S.product;
+  $('taskList').innerHTML='<div class="loader">載入任務中…</div>';
+  showOnly('sTasks');crumbs();
   try{
-    const data = await api('data',{
-      client: state.client,
-      month: state.month,
-      product: state.product,
-      type: state.type
-    });
-
-    if(seq && isStale(seq)) return;
-
-    renderTasks(data.tasks || [], data.sheetName || '');
-  }catch(e){
-    $('taskList').innerHTML = `<div class="empty">載入失敗：${html(e.message)}</div>`;
-  }
+    // 任務列表永遠走 GAS（需要即時資料）
+    const d=await gasAPI('data',{client:S.client,month:S.month,product:S.product,type:t});
+    if(stale(seq))return;
+    renderTasks(d.tasks||[],d.sheetName||'');
+  }catch(e){$('taskList').innerHTML=`<div class="empty">載入失敗：${h(e.message)}</div>`;}
 }
 
-  function countTasks(tasks, type){
-  var oldType = state.type;
-  state.type = type;
-
-  var result = {need:0, done:0, total:0};
-
-  (tasks || []).forEach(function(t){
-    if(!t.status || !t.status.trim()) return;
-
-    var ds = getTaskDisplayState(t);
-    result.total++;
-
-    if(ds.group === 'done') result.done++;
-    else if(ds.group === 'active') result.need++;
-  });
-
-  state.type = oldType;
-  return result;
-}
-
-function countHTML(c){
-  if(!c || !c.total){
-    return '<div class="countRow"><span class="countBadge countMuted">無任務</span></div>';
-  }
-
-  return '<div class="countRow">'
-    + '<span class="countBadge countNeed">待確認 ' + (c.need || 0) + '</span>'
-    + '<span class="countBadge countMuted">製作中 ' + (c.progress || 0) + '</span>'
-    + '<span class="countBadge countDone">已完成 ' + (c.done || 0) + '</span>'
-    + '</div>';
-}
-
-async function renderTypeCounts(seq){
-  const threadBtn = document.querySelector('.typeBtn:nth-child(1)');
-  const videoBtn  = document.querySelector('.typeBtn:nth-child(2)');
-
-  threadBtn.innerHTML =
-    '<div style="font-size:32px;margin-bottom:8px">🧵</div><b>脆（Threads）</b><br><small style="color:inherit;opacity:.7">數據載入中…</small>';
-
-  videoBtn.innerHTML =
-    '<div style="font-size:32px;margin-bottom:8px">🎬</div><b>影音</b><br><small style="color:inherit;opacity:.7">數據載入中…</small>';
-
-  let counts = state.countCache[state.month];
-
-  if(!counts){
-    const data = await api('counts', {
-      client: state.client,
-      month: state.month
-    });
-    counts = data.counts || {};
-    state.countCache[state.month] = counts;
-  }
-
-  if(isStale(seq)) return;
-
-  const productCount = counts[state.product] || {};
-  const thread = productCount.thread || {need:0, progress:0, done:0, total:0};
-  const video  = productCount.video  || {need:0, progress:0, done:0, total:0};
-
-  threadBtn.innerHTML =
-    '<div style="font-size:32px;margin-bottom:8px">🧵</div><b>脆（Threads）</b><br><small style="color:inherit;opacity:.7">短文 / 圖片 / 留言</small>' + countHTML(thread);
-
-  videoBtn.innerHTML =
-    '<div style="font-size:32px;margin-bottom:8px">🎬</div><b>影音</b><br><small style="color:inherit;opacity:.7">腳本 / 畫面說明</small>' + countHTML(video);
-
-  threadBtn.setAttribute('onclick', "safeNav(function(){ return chooseType('thread') })");
-  videoBtn.setAttribute('onclick', "safeNav(function(){ return chooseType('video') })");
-}
-
-// ─── 狀態計算 ───────────────────────────────────────────────
-function getTaskDisplayState(t){
-  var s = t.status || '';
-  var vs = t.videoStatus || '';
-  var hasVideo = !!t.videoLink;
-  var isVideo = state.type === 'video';
-
-  if(!isVideo){
-    // 脆
-    if(!s || s==='客戶尚未確認') return {group:'active', label:'待確認', cls:'need-action', emoji:'📝'};
-    if(s==='客戶已回需修改')      return {group:'passive', label:'二稿修改中', cls:'modify', emoji:'✏️'};
-    if(s==='修改完成，需確認')     return {group:'active', label:'修改稿待確認', cls:'review', emoji:'🔍'};
-    if(s==='確認完畢')             return {group:'done', label:'腳本確認完畢', cls:'ok', emoji:'✅'};
-  } else {
-    // 影音
-    if(!s || s==='客戶尚未確認') return {group:'active', label:'腳本待確認', cls:'need-action', emoji:'📝'};
-    if(s==='客戶已回需修改')      return {group:'passive', label:'二稿修改中', cls:'modify', emoji:'✏️'};
-    if(s==='修改完成，需確認')     return {group:'active', label:'腳本修改稿待確認', cls:'review', emoji:'🔍'};
+/* ══════════════════════════════════════════
+   TASK STATE
+══════════════════════════════════════════ */
+function getDS(t){
+  const s=t.status||'',vs=t.videoStatus||'',hv=!!t.videoLink,iv=S.type==='video';
+  if(!iv){
+    if(!s||s==='客戶尚未確認')return{g:'active',label:'待確認',cls:'b-need',e:'📝'};
+    if(s==='客戶已回需修改')return{g:'passive',label:'修改中',cls:'b-mod',e:'✏️'};
+    if(s==='修改完成，需確認')return{g:'active',label:'修改稿待確認',cls:'b-rev',e:'🔍'};
+    if(s==='確認完畢')return{g:'done',label:'確認完畢',cls:'b-ok',e:'✅'};
+  }else{
+    if(!s||s==='客戶尚未確認')return{g:'active',label:'腳本待確認',cls:'b-need',e:'📝'};
+    if(s==='客戶已回需修改')return{g:'passive',label:'腳本修改中',cls:'b-mod',e:'✏️'};
+    if(s==='修改完成，需確認')return{g:'active',label:'修改稿待確認',cls:'b-rev',e:'🔍'};
     if(s==='確認完畢'){
-      if(!hasVideo && (!vs || vs==='影片需確認')) return {group:'passive', label:'影片製作中', cls:'in-progress', emoji:'🎬'};
-      if(vs==='影片需確認' && hasVideo)  return {group:'active', label:'影片待確認', cls:'need-action', emoji:'🎥'};
-      if(vs==='需修改')                   return {group:'passive', label:'影片修改中', cls:'modify', emoji:'🔧'};
-      if(vs==='修改稿需確認')             return {group:'active', label:'影片修改稿待確認', cls:'review', emoji:'🔍'};
-      if(vs==='確認完畢')                 return {group:'done', label:'全部確認完畢', cls:'ok', emoji:'✅'};
-      // 腳本OK但影片狀態空
-      return {group:'passive', label:'影片製作中', cls:'in-progress', emoji:'🎬'};
+      if(!hv&&(!vs||vs==='影片需確認'))return{g:'passive',label:'影片製作中',cls:'b-prog',e:'🎬'};
+      if(vs==='影片需確認'&&hv)return{g:'active',label:'影片待確認',cls:'b-need',e:'🎥'};
+      if(vs==='需修改')return{g:'passive',label:'影片修改中',cls:'b-mod',e:'🔧'};
+      if(vs==='修改稿需確認')return{g:'active',label:'影片修改稿待確認',cls:'b-rev',e:'🔍'};
+      if(vs==='確認完畢')return{g:'done',label:'全部完畢',cls:'b-ok',e:'✅'};
+      return{g:'passive',label:'影片製作中',cls:'b-prog',e:'🎬'};
     }
   }
-  return {group:'active', label:'待確認', cls:'need-action', emoji:'📝'};
+  return{g:'active',label:'待確認',cls:'b-need',e:'📝'};
 }
 
-function renderTasks(tasks, sheetName){
-  if(!tasks.length){ $('taskList').innerHTML='<div class="empty">目前沒有任務資料</div>'; return; }
-
-  // ★ 篩掉狀態空白的任務（腳本尚未分配，不需客戶看）
-  var filtered = tasks.filter(function(t){ return t.status && t.status.trim() !== ''; });
-  if(!filtered.length){ $('taskList').innerHTML='<div class="empty">目前沒有待確認的任務</div>'; return; }
-
-  var active=[], passive=[], done=[];
-  filtered.forEach(function(t,i){
-    var ds = getTaskDisplayState(t);
-    var obj = {t:t, ds:ds, i:i, sheetName:sheetName};
-    if(ds.group==='done') done.push(obj);
-    else if(ds.group==='passive') passive.push(obj);
-    else active.push(obj);
-  });
-
-  if(!active.length && !passive.length && !done.length){
-    $('taskList').innerHTML='<div class="empty">目前沒有任務</div>'; return;
-  }
-
-  var html_out = '';
-
-  if(active.length){
-    active.forEach(function(o){ html_out += taskHTML(o.t, o.sheetName, 'task'+o.i, o.ds, true); });
-  }
-  if(passive.length){
-    passive.forEach(function(o){ html_out += taskHTML(o.t, o.sheetName, 'task'+o.i, o.ds, false); });
-  }
-  if(done.length){
-    html_out += '<div class="section-done"><div class="section-done-label">已確認完畢（可點開調整）</div></div>';
-    done.forEach(function(o){ html_out += taskHTML(o.t, o.sheetName, 'task'+o.i, o.ds, false); });
-  }
-
-  $('taskList').innerHTML = html_out || '<div class="empty">🎉 所有任務都已確認完畢</div>';
+/* ══════════════════════════════════════════
+   RENDER TASKS
+══════════════════════════════════════════ */
+function renderTasks(tasks,sheetName){
+  const f=tasks.filter(t=>t.status?.trim());
+  if(!f.length){$('taskList').innerHTML='<div class="empty">目前沒有待確認的任務</div>';return;}
+  const active=[],passive=[],done=[];
+  f.forEach((t,i)=>{const ds=getDS(t),o={t,ds,i,sheetName};ds.g==='done'?done.push(o):ds.g==='passive'?passive.push(o):active.push(o);});
+  let out='';
+  active.forEach(o=>out+=taskHTML(o.t,o.sheetName,'tk'+o.i,o.ds,true));
+  passive.forEach(o=>out+=taskHTML(o.t,o.sheetName,'tk'+o.i,o.ds,false));
+  if(done.length){out+='<div class="done-div">已確認完畢（可點開調整）</div>';done.forEach(o=>out+=taskHTML(o.t,o.sheetName,'tk'+o.i,o.ds,false));}
+  $('taskList').innerHTML=out||'<div class="empty">所有任務都已確認完畢</div>';
+  document.querySelectorAll('.task-card[data-ao]').forEach(el=>{el.classList.add('open');el.removeAttribute('data-ao');});
 }
 
-function taskHTML(t, sheetName, id, ds, isPriority){
-  var s = t.status || '';
-  var vs = t.videoStatus || '';
-  var hasVideo = !!t.videoLink;
-  var isDone = ds.group==='done';
-
-  // 腳本下拉
-  var scriptOpts = ['客戶尚未確認','客戶已回需修改','修改完成，需確認','確認完畢'];
-  var scriptSelect = '<select id="ssel-'+id+'">'
-    + scriptOpts.map(function(o){ return '<option'+(s===o?' selected':'')+'>'+o+'</option>'; }).join('')
-    + '</select>';
-
-  // 影片下拉
-  var videoOpts = ['影片需確認','需修改','修改稿需確認','確認完畢'];
-  var videoSelect = '<select id="vsel-'+id+'">'
-    + videoOpts.map(function(o){ return '<option'+(vs===o?' selected':'')+'>'+o+'</option>'; }).join('')
-    + '</select>';
-
-  // 脆：分開腳本圖片和留言內圖片；影音：不顯示圖片
-  var scriptImgs = state.type === 'thread'
-    ? ['image1','image2','image3'].map(function(k){ return imgHTML(t[k]); }).filter(Boolean).join('')
-    : '';
-  var commentImgs = state.type === 'thread'
-    ? ['commentImg1','commentImg2'].map(function(k){ return imgHTML(t[k]); }).filter(Boolean).join('')
-    : '';
-
-  // 影片區
-  var videoSection = '';
-  if(state.type==='video'){
-    var needVideoAction = (s==='確認完畢') && hasVideo && (vs!=='確認完畢');
-    var videoVisible = s==='確認完畢'; // 只有腳本確認後才顯示影片區
-    if(videoVisible){
-      videoSection = '<div class="action-video-zone">'
-        + '<div class="action-video-title">🎬 影片確認</div>'
-        + (hasVideo
-            ? videoLinksHTML(t.videoLink)
-            : '<div style="color:var(--muted);font-size:13px;margin-bottom:10px">⏳ 影片製作中，尚未上傳</div>')
-        + (hasVideo ? videoSelect : '')
-        + '<textarea id="vfb-'+id+'" placeholder="影片回饋意見（可空白）">'+html(t.videoFeedback||'')+'</textarea>'
-        + (hasVideo ? '<button class="btn btn-video" onclick="submitTask(event,\''+id+'\',\''+esc(sheetName)+'\',\''+esc(t.taskId)+'\',\'video\')">送出影片確認</button>' : '')
-        + '</div>';
-    }
+function taskHTML(t,sn,id,ds,isPrio){
+  const s=t.status||'',vs=t.videoStatus||'',hv=!!t.videoLink;
+  const sOpts=['客戶尚未確認','客戶已回需修改','修改完成，需確認','確認完畢'];
+  const vOpts=['影片需確認','需修改','修改稿需確認','確認完畢'];
+  const ss=`<select id="ss-${id}">${sOpts.map(o=>`<option${s===o?' selected':''}>${o}</option>`).join('')}</select>`;
+  const vs2=`<select id="vs-${id}">${vOpts.map(o=>`<option${vs===o?' selected':''}>${o}</option>`).join('')}</select>`;
+  const si=S.type==='thread'?['image1','image2','image3'].map(k=>imgt(t[k])).filter(Boolean).join(''):'' ;
+  const ci=S.type==='thread'?['commentImg1','commentImg2'].map(k=>imgt(t[k])).filter(Boolean).join(''):'' ;
+  let vz='';
+  if(S.type==='video'&&s==='確認完畢'){
+    vz=`<div class="avz"><div class="avz-title">🎬 影片確認</div>${hv?vlinksH(t.videoLink):'<div style="color:var(--muted);font-size:12px;margin-bottom:10px">⏳ 影片製作中</div>'}${hv?vs2:''}<textarea id="vf-${id}" placeholder="影片回饋（可空白）">${h(t.videoFeedback||'')}</textarea>${hv?`<button class="btn btn-blue" onclick="doSub(event,'${id}','${esc(sn)}','${esc(t.taskId)}','video')">送出影片確認</button>`:''}</div>`;
   }
-
-  // 腳本動作區（done 時也顯示但折疊）
-  var scriptAction = '<div class="action-zone">'
-    + '<div class="action-zone-title">📝 腳本確認</div>'
-    + scriptSelect
-    + '<textarea id="sfb-'+id+'" placeholder="回饋意見（可空白）">'+html(t.feedback||'')+'</textarea>'
-    + '<button class="btn" onclick="submitTask(event,\''+id+'\',\''+esc(sheetName)+'\',\''+esc(t.taskId)+'\',\'script\')">送出腳本確認</button>'
-    + '</div>'
-    + videoSection;
-
-  var taskClass = 'task' + (isPriority?' priority':'') + (isDone?' done-section':'');
-  var autoOpen = isPriority && !isDone;
-
-  return '<div class="'+taskClass+'" id="'+id+'"'+(autoOpen?' style="--open:1"':'')+' data-auto-open="'+autoOpen+'">'
-    + '<div class="taskHead" onclick="toggleTask(\''+id+'\')">'
-    + '<span style="font-size:16px">'+ds.emoji+'</span>'
-    + '<span class="taskId">'+html(t.taskId)+'</span>'
-    + (t.persona ? '<span class="persona">'+html(t.persona)+'</span>' : '')
-    + '<span class="badge '+ds.cls+'">'+html(ds.label)+'</span>'
-    + '<span class="grow"></span>'
-    + (t.planner  ? '<span class="date">企劃：'+html(t.planner)+'</span>'  : '')
-    + (t.doneDate ? '<span class="date">'+html(t.doneDate)+'</span>' : '')
-    + '<span class="chevron">›</span>'
-    + '</div>'
-    + '<div class="body">'
-    + '<div class="body-inner">'
-    + '<div class="field"><div class="label">腳本內容</div><div class="value">'+html(t.content||'—')+'</div></div>'
-    + (state.type === 'video' && t.screenDescription
-      ? '<div class="field"><div class="label">畫面</div><div class="value">'+html(t.screenDescription)+'</div></div>'
-      : '')
-    + (t.comment ? '<div class="field"><div class="label">留言</div><div class="value">'+html(t.comment)+'</div></div>' : '')
-    + (t.feedback ? '<div class="field"><div class="label">上次回饋</div><div class="value" style="background:var(--accent-light);border-left:3px solid var(--accent)">'+html(t.feedback)+'</div></div>' : '')
-    + (t.videoFeedback ? '<div class="field"><div class="label">影片回饋記錄</div><div class="value" style="background:var(--blue-light);border-left:3px solid var(--blue)">'+html(t.videoFeedback)+'</div></div>' : '')
-    + (scriptImgs ? '<div class="field"><div class="label">腳本圖片</div><div class="imgs">'+scriptImgs+'</div></div>' : '')
-    + (commentImgs ? '<div class="field" style="border-top:1px dashed var(--line);padding-top:14px;margin-top:4px"><div class="label">留言內圖片</div><div class="imgs">'+commentImgs+'</div></div>' : '')
-    + '</div>'
-    + scriptAction
-    + '</div>'
-    + '</div>';
+  return`<div class="task-card${isPrio?' prio':''}${ds.g==='done'?' done-c':''}" id="${id}"${isPrio&&ds.g!=='done'?' data-ao':''}>
+<div class="thead" onclick="tog('${id}','task-card')">
+  <span style="font-size:15px">${ds.e}</span>
+  <span class="tid">${h(t.taskId)}</span>
+  ${t.persona?`<span class="persona">${h(t.persona)}</span>`:''}
+  <span class="bdg ${ds.cls}">${h(ds.label)}</span>
+  <span class="tgrow"></span>
+  ${t.planner?`<span class="tdate">企劃 ${h(t.planner)}</span>`:''}
+  ${t.doneDate?`<span class="tdate">${h(t.doneDate)}</span>`:''}
+  <span class="chev">›</span>
+</div>
+<div class="tbody">
+  <div class="tinner">
+    <div class="field"><div class="flabel">腳本內容</div><div class="fval">${h(t.content||'—')}</div></div>
+    ${S.type==='video'&&t.screenDescription?`<div class="field"><div class="flabel">畫面</div><div class="fval">${h(t.screenDescription)}</div></div>`:''}
+    ${t.comment?`<div class="field"><div class="flabel">留言</div><div class="fval">${h(t.comment)}</div></div>`:''}
+    ${t.feedback?`<div class="field"><div class="flabel">上次回饋</div><div class="fval hi-f">${h(t.feedback)}</div></div>`:''}
+    ${t.videoFeedback?`<div class="field"><div class="flabel">影片回饋記錄</div><div class="fval hi-b">${h(t.videoFeedback)}</div></div>`:''}
+    ${si?`<div class="field"><div class="flabel">腳本圖片</div><div class="imgs-row">${si}</div></div>`:''}
+    ${ci?`<div class="field" style="border-top:1px dashed var(--line);padding-top:12px;margin-top:4px"><div class="flabel">留言圖片</div><div class="imgs-row">${ci}</div></div>`:''}
+  </div>
+  <div class="az"><div class="az-title">📝 腳本確認</div>${ss}<textarea id="sf-${id}" placeholder="回饋意見（可空白）">${h(t.feedback||'')}</textarea><button class="btn" onclick="doSub(event,'${id}','${esc(sn)}','${esc(t.taskId)}','script')">送出腳本確認</button></div>
+  ${vz}
+</div>
+</div>`;
 }
 
-// 自動展開 priority 任務
-document.addEventListener('DOMContentLoaded', function(){});
-// 改用 MutationObserver 監聽 taskList 更新
-var _obs = new MutationObserver(function(){
-  document.querySelectorAll('.task[data-auto-open="true"]').forEach(function(el){
-    el.classList.add('open');
-    el.removeAttribute('data-auto-open');
-  });
-});
-_obs.observe(document.body, {childList:true, subtree:true});
-
-function imgHTML(url){
-  if(!url || url.trim()==='') return '';
-  var u = url.trim();
-  // 已轉成 thumbnail 格式
-  if(u.includes('drive.google.com/thumbnail'))
-    return '<img class="img" src="'+html(u)+'" onclick="openLB(\''+esc(u)+'\')" loading="lazy">';
-  // Drive file 連結，轉成 thumbnail
-  var m = u.match(/\/file\/d\/([^\/\?]+)/);
-  if(!m) m = u.match(/[?&]id=([^&]+)/);
-  if(m){
-    var thumb = 'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w800';
-    return '<img class="img" src="'+html(thumb)+'" onclick="openLB(\''+esc(thumb)+'\')" loading="lazy">';
-  }
-  // 非 Google Drive 圖片連結不顯示
-  return '';
-}
-
-async function submitTask(ev, id, sheetName, taskId, submitKind){
+/* ══════════════════════════════════════════
+   SUBMIT
+══════════════════════════════════════════ */
+async function doSub(ev,id,sn,tid,kind){
   ev.stopPropagation();
-  var btn=ev.target; btn.disabled=true; btn.textContent='送出中…';
-  var status='', feedback='', videoStatus='', videoFeedback='';
-  if(submitKind==='script'){
-    status   = document.getElementById('ssel-'+id).value;
-    feedback = document.getElementById('sfb-'+id).value;
-  } else {
-    videoStatus   = document.getElementById('vsel-'+id).value;
-    videoFeedback = document.getElementById('vfb-'+id).value;
-  }
+  const btn=ev.target;btn.disabled=true;btn.textContent='送出中…';
+  const p={client:S.client,type:S.type,sheetName:sn,taskId:tid,submitKind:kind};
+  if(kind==='script'){p.status=$(`ss-${id}`).value;p.feedback=$(`sf-${id}`).value;}
+  else{p.videoStatus=$(`vs-${id}`)?.value||'';p.videoFeedback=$(`vf-${id}`)?.value||'';}
   try{
-    await api('submit',{client:state.client,type:state.type,sheetName:sheetName,taskId:taskId,submitKind:submitKind,status:status,feedback:feedback,videoStatus:videoStatus,videoFeedback:videoFeedback});
+    await gasAPI('submit',p);
+    // 送出後清掉 dashboard cache，下次打開數據牆會重抓
+    S.dashboard=null;S.dashReady=false;
     toast('✅ 已送出');
-
-    // ★ 就地更新：不重跑畫面，直接更新 task 的狀態 badge 和分組
-    var taskEl = document.getElementById(id);
-    if(taskEl){
-      // 更新本地狀態物件以便重算 badge
-      var fakeT = {};
-      taskEl.querySelectorAll('select').forEach(function(sel){
-        if(sel.id==='ssel-'+id) fakeT.status = sel.value;
-        if(sel.id==='vsel-'+id) fakeT.videoStatus = sel.value;
-      });
-      fakeT.status = fakeT.status || status || '';
-      fakeT.videoStatus = fakeT.videoStatus || videoStatus || '';
-      fakeT.videoLink = taskEl.querySelector('.video-link') ? '有' : '';
-
-      var newDs = getTaskDisplayState(fakeT);
-
-      // 更新 badge
-      var badge = taskEl.querySelector('.badge');
-      if(badge){
-        badge.className = 'badge '+newDs.cls;
-        badge.textContent = newDs.label;
-      }
-      // 更新 emoji
-      var emojiEl = taskEl.querySelector('.taskHead span:first-child');
-      if(emojiEl) emojiEl.textContent = newDs.emoji;
-
-      // 如果變成 done，移到下方區塊
-      if(newDs.group === 'done'){
-        taskEl.classList.remove('priority');
-        taskEl.classList.add('done-section');
-        // 找或建立 done 區塊
-        var doneSection = document.querySelector('.section-done');
-        if(!doneSection){
-          var divider = document.createElement('div');
-          divider.className = 'section-done';
-          divider.innerHTML = '<div class="section-done-label">已確認完畢（可點開調整）</div>';
-          $('taskList').appendChild(divider);
-        }
-        $('taskList').appendChild(taskEl);
-        taskEl.classList.remove('open');
+    // 就地更新 badge
+    const card=document.getElementById(id);
+    if(card){
+      const ft={status:kind==='script'?p.status:s,videoStatus:kind==='video'?p.videoStatus:'',videoLink:card.querySelector('.vlink')?'y':''};
+      const nd=getDS(ft);
+      const bdg=card.querySelector('.bdg');if(bdg){bdg.className='bdg '+nd.cls;bdg.textContent=nd.label;}
+      const ei=card.querySelector('.thead span:first-child');if(ei)ei.textContent=nd.e;
+      if(nd.g==='done'){
+        card.classList.remove('prio');card.classList.add('done-c');
+        let dv=document.querySelector('.done-div');
+        if(!dv){dv=document.createElement('div');dv.className='done-div';dv.textContent='已確認完畢（可點開調整）';$('taskList').appendChild(dv);}
+        $('taskList').appendChild(card);card.classList.remove('open');
       }
     }
-
-    btn.disabled=false;
-    btn.textContent=submitKind==='script'?'送出腳本確認':'送出影片確認';
+    btn.disabled=false;btn.textContent=kind==='script'?'送出腳本確認':'送出影片確認';
   }catch(e){
-    toast('⚠️ 送出失敗：'+e.message);
-    btn.disabled=false;
-    btn.textContent=submitKind==='script'?'送出腳本確認':'送出影片確認';
+    toast('⚠️ 失敗：'+e.message);
+    btn.disabled=false;btn.textContent=kind==='script'?'送出腳本確認':'送出影片確認';
   }
 }
 
-function showOnly(id){
-  ['sceneClient','sceneMonth','sceneProduct','sceneType','sceneTasks'].forEach(function(s){
-    var el = $(s);
-    if(el) el.classList.add('hidden');
-  });
-  var target = $(id);
-  if(target) target.classList.remove('hidden');
+/* ══════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════ */
+async function prefetchDash(){
+  if(!S.client||S.dashLoading||S.dashboard)return;
+  S.dashLoading=true;
+  try{
+    S.dashboard=await fetch2('dashboard','dashboard',{client:S.client});
+    S.dashReady=true;
+  }catch(_){S.dashReady=false;}
+  finally{S.dashLoading=false;}
 }
 
-function setGridLoading(gridId, text){
-  var el = $(gridId);
-  if(el) el.innerHTML = '<div class="loader">'+html(text || '載入中…')+'</div>';
+async function toggleWall(){
+  if(!S.client)return;
+  const on=!$('sDash').classList.contains('hidden');
+  const wb=$('wallBtn');
+  if(on){
+    // 切回確認系統
+    wb.textContent='數據牆';wb.classList.remove('on');
+    showOnly(S.lastScene||'sMonth');crumbs();
+    return;
+  }
+  // 切到數據牆：記住目前在哪個畫面
+  ['sClient','sMonth','sProduct','sType','sTasks'].forEach(s=>{if(!$(s).classList.contains('hidden'))S.lastScene=s;});
+  wb.textContent='確認牆';wb.classList.add('on');
+  showOnly('sDash');
+  $('bc').innerHTML='<div class="crumb cur"><small>Read Only</small><span>數據牆</span></div>';
+  await loadDash();
 }
 
-function setGridError(gridId, msg){
-  var el = $(gridId);
-  if(el) el.innerHTML = '<div class="empty">載入失敗：'+html(msg)+'</div>';
+async function loadDash(){
+  $('dashSub').textContent=S.clientName+' · 客戶管理表';
+  // 如果預載已完成直接渲染，不顯示 loader
+  if(S.dashReady&&S.dashboard){
+    renderDash(S.dashboard);
+    return;
+  }
+  $('dashBody').innerHTML='<div class="loader">載入數據中…</div>';
+  try{
+    if(!S.dashboard)S.dashboard=await fetch2('dashboard','dashboard',{client:S.client});
+    renderDash(S.dashboard);
+  }catch(e){$('dashBody').innerHTML=`<div class="empty">載入失敗：${h(e.message)}</div>`;}
 }
 
-async function goClientHome(){
-  state.month = '';
-  state.product = '';
-  state.type = '';
-  history.pushState(null, '', location.pathname + '?client=' + encodeURIComponent(state.client));
-  await loadMeta();
-}
+function renderDash(data){
+  const months=data.months||[];
+  if(!months.length){
+    $('dashMetrics').innerHTML='';
+    $('dashBody').innerHTML=`<div class="empty">${h(data.message||'客戶管理表目前沒有資料')}</div>`;
+    return;
+  }
+  const tE=months.reduce((s,m)=>s+(m.totalExposure||0),0);
+  const tF=months.reduce((s,m)=>s+(m.totalFee||0),0);
+  const tT=months.reduce((s,m)=>s+(m.taskCount||0),0);
+  $('dashMetrics').innerHTML=`
+    <div class="dm"><div class="dm-label">總曝光</div><div class="dm-val">${n(tE)}</div><div class="dm-sub">所有月份合計</div></div>
+    <div class="dm"><div class="dm-label">總收費</div><div class="dm-val">$${n(tF)}</div><div class="dm-sub">所有月份合計</div></div>
+    <div class="dm"><div class="dm-label">任務總數</div><div class="dm-val">${n(tT)}</div><div class="dm-sub">所有月份合計</div></div>`;
 
-function goMonthPage(){
-  state.product = '';
-  state.type = '';
-  history.pushState(null, '', location.pathname + '?client=' + encodeURIComponent(state.client));
-  showOnly('sceneProduct');
-  updateCrumbs();
-}
-
-function goProductPage(){
-  state.type = '';
-  history.pushState(null, '', location.pathname + '?client=' + encodeURIComponent(state.client));
-  showOnly('sceneType');
-  updateCrumbs();
-}
-
-function updateCrumbs(){
-  var parts = [];
-
-  if(state.clientName){
-    parts.push({
-      label: state.clientName,
-      sub: '客戶首頁',
-      fn: 'goClientHome()'
+  $('dashBody').innerHTML=months.map((m,mi)=>{
+    const pm={};
+    (m.tasks||[]).forEach(t=>{
+      const p=t.product||'未分類';
+      if(!pm[p])pm[p]={name:p,tasks:[],tE:0,tF:0};
+      pm[p].tasks.push(t);pm[p].tE+=t.exposure||0;pm[p].tF+=t.fee||0;
     });
-  }
+    const prods=Object.values(pm).sort((a,b)=>b.tE-a.tE);
+    const maxE=prods[0]?.tE||1;
 
-  if(state.month){
-    parts.push({
-      label: state.month,
-      sub: '月份',
-      fn: 'goMonthPage()'
-    });
-  }
+    const rows=prods.map((p,pi)=>{
+      const rc=pi===0?'r1':pi===1?'r2':pi===2?'r3':'';
+      const re=pi===0?'🥇':pi===1?'🥈':pi===2?'🥉':(pi+1);
+      const bw=Math.max(4,Math.round(p.tE/maxE*100));
+      const pid=`pz${mi}_${pi}`;
 
-  if(state.product){
-    parts.push({
-      label: state.product,
-      sub: '商品',
-      fn: 'goProductPage()'
-    });
-  }
+      const minis=[...p.tasks].sort((a,b)=>(b.exposure||0)-(a.exposure||0)).map((t,ti)=>{
+        const imgs=['image','image1','image2'].map(k=>imgMini(t[k])).filter(Boolean).join('');
+        const lnks=[
+          t.postLink&&/^https?:\/\//i.test(t.postLink)?`<a class="mlink ml-post" href="${h(t.postLink)}" target="_blank">🔗 發布連結</a>`:'',
+          t.videoLink&&/^https?:\/\//i.test(t.videoLink)?`<a class="mlink ml-video" href="${h(t.videoLink)}" target="_blank">▶️ 影片</a>`:''
+        ].filter(Boolean).join('');
+        const sid=`s${mi}_${pi}_${ti}`;
+        const scr=t.script?`<div class="scr-txt" id="${sid}">${h(t.script)}</div><span class="scr-more" onclick="expScr('${sid}')">展開全文 ↓</span>`:'';
+        const mid=`mc${mi}_${pi}_${ti}`;
+        return`<div class="mini-card" id="${mid}">
+<div class="mini-head" onclick="tog('${mid}','mini-card')">
+  <span class="tid">${h(t.taskId||'—')}</span>
+  ${t.type?`<span class="bdg b-prog">${h(t.type)}</span>`:''}
+  <span class="tgrow"></span>
+  <span class="exp-n">${n(t.exposure||0)}</span>
+  <span class="mc">›</span>
+</div>
+<div class="mini-body">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
+    ${imgs?`<div style="display:flex;gap:6px;flex-wrap:wrap">${imgs}</div>`:''}
+    <div style="flex:1;min-width:140px">${scr}</div>
+  </div>
+  ${lnks?`<div class="mini-links">${lnks}</div>`:''}
+</div>
+</div>`;
+      }).join('');
 
-  if(state.type){
-    parts.push({
-      label: state.type === 'thread' ? '脆（Threads）' : '影音',
-      sub: '內容類型',
-      fn: ''
-    });
-  }
+      return`<tr class="prod-row" onclick="togProd('${pid}')">
+  <td><span class="rank ${rc}">${re}</span></td>
+  <td><span class="ptag" title="${h(p.name)}">${h(p.name)}</span></td>
+  <td style="color:var(--muted);font-family:var(--mono);font-size:11px">${p.tasks.length}</td>
+  <td><div class="bar-bg"><div class="bar-fg" style="width:${bw}%"></div></div></td>
+  <td><span class="exp-n">${n(p.tE)}</span></td>
+  <td><span class="fee-n">${p.tF?'$'+n(p.tF):'—'}</span></td>
+  <td style="color:var(--muted)">›</td>
+</tr>
+<tr class="pexp-tr" id="${pid}">
+  <td colspan="7" class="pexp-td"><div class="mini-list">${minis}</div></td>
+</tr>`;
+    }).join('');
 
-  $('crumbs').innerHTML = parts.map(function(p, i){
-    var text = '<span style="font-size:11px;color:var(--muted);font-weight:500">'+html(p.sub)+'</span>' +
-               '<span style="display:block;font-size:13px">'+html(p.label)+'</span>';
-
-if(i === parts.length - 1){
-  return '<span class="crumb current">'+text+'</span>';
-}
-
-if(!p.fn){
-  return '<span class="crumb disabled">'+text+'</span>';
-}
-
-return '<span class="crumb link" onclick="safeNav(function(){ '+p.fn+' })">'+text+'</span>';
-  }).join('<span class="sep"> › </span>');
-}
-function toggleTask(id){$(id).classList.toggle('open');}
-function openLB(url){$('lbImg').src=url;$('lightbox').classList.add('show');}
-function closeLB(){$('lightbox').classList.remove('show');}
-function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');setTimeout(function(){$('toast').classList.remove('show');},3000);}
-function html(s){return String(s??'').replace(/[&<>"']/g,function(m){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]);});}
-function esc(s){return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
-
-  function splitVideoLinks(raw){
-  return String(raw || '')
-    .split(/\s*\n+\s*|\s*,\s*/)
-    .map(function(s){ return s.trim(); })
-    .filter(function(s){ return /^https?:\/\//i.test(s); });
-}
-
-function videoLinksHTML(raw){
-  var links = splitVideoLinks(raw);
-  if(!links.length) return '';
-
-  return links.map(function(url, i){
-    var label = links.length === 1 ? '▶️ 開啟影片' : '▶️ 開啟影片 ' + (i + 1);
-    return '<a class="video-link" href="'+html(url)+'" target="_blank" rel="noopener">'+label+'</a>';
+    return`<div class="month-block" id="mb${mi}">
+<div class="mhead" onclick="tog('mb${mi}','month-block')">
+  <div class="m-label">${h(m.month)}</div>
+  <div class="mpills">
+    <span class="mpill">曝光 <b>${n(m.totalExposure||0)}</b></span>
+    ${m.totalFee?`<span class="mpill">收費 <b>$${n(m.totalFee)}</b></span>`:''}
+    <span class="mpill">任務 <b>${m.taskCount||0}</b></span>
+    <span class="mpill"><b>${prods.length}</b> 商品</span>
+  </div>
+  <span class="mchev">›</span>
+</div>
+<div class="mbody">
+  <div class="pt-wrap">
+    <table class="pt">
+      <thead><tr><th>排名</th><th>商品</th><th>篇數</th><th>佔比</th><th>曝光</th><th>收費</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>
+</div>
+</div>`;
   }).join('');
+
+  document.querySelector('.month-block')?.classList.add('open');
 }
 
-  
+/* ══════════════════════════════════════════
+   BREADCRUMB
+══════════════════════════════════════════ */
+function crumbs(){
+  const pts=[];
+  if(S.clientName)pts.push({label:S.clientName,sub:'客戶首頁',fn:'goHome()'});
+  if(S.month)pts.push({label:S.month,sub:'月份',fn:'goM()'});
+  if(S.product)pts.push({label:S.product,sub:'商品',fn:'goP()'});
+  if(S.type)pts.push({label:S.type==='thread'?'脆（Threads）':'影音',sub:'類型',fn:''});
+  $('bc').innerHTML=pts.map((p,i)=>{
+    const last=i===pts.length-1;
+    const inner=`<small>${p.sub}</small><span>${h(p.label)}</span>`;
+    if(last)return`<div class="crumb cur">${inner}</div>`;
+    if(!p.fn)return`<div class="crumb">${inner}</div>`;
+    return`<div class="crumb lnk" onclick="${p.fn}">${inner}</div>`;
+  }).join('<span class="csep">›</span>');
+}
+function goHome(){safeNav(()=>loadMeta());}
+function goM(){S.product='';S.type='';showOnly('sMonth');crumbs();}
+function goP(){S.type='';showOnly('sType');crumbs();}
+
+/* ══════════════════════════════════════════
+   TOGGLE HELPERS
+══════════════════════════════════════════ */
+function tog(id,cls){document.getElementById(id)?.classList.toggle('open');}
+function togProd(pid){
+  const el=document.getElementById(pid);if(!el)return;
+  const wasOpen=el.classList.contains('open');
+  el.closest('tbody')?.querySelectorAll('.pexp-tr.open').forEach(r=>{if(r!==el)r.classList.remove('open');});
+  el.closest('tbody')?.querySelectorAll('.prod-row.act').forEach(r=>r.classList.remove('act'));
+  el.classList.toggle('open',!wasOpen);
+  if(!wasOpen)el.previousElementSibling?.classList.add('act');
+}
+function expScr(id){const el=document.getElementById(id);if(el){el.classList.add('exp');el.nextElementSibling?.remove();}}
+
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+function imgt(url){
+  url=String(url||'').trim();if(!url)return'';
+  let src=url,m=url.match(/\/file\/d\/([^\/\?]+)/);
+  if(!m)m=url.match(/[?&]id=([^&]+)/);
+  if(m)src=`https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+  else if(!url.includes('drive.google.com'))return'';
+  return`<img class="img-th" src="${h(src)}" onclick="openLB('${esc(src)}')" loading="lazy">`;
+}
+function imgMini(url){
+  url=String(url||'').trim();if(!url)return'';
+  let src=url,m=url.match(/\/file\/d\/([^\/\?]+)/);
+  if(!m)m=url.match(/[?&]id=([^&]+)/);
+  if(m)src=`https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+  else if(!url.includes('drive.google.com'))return'';
+  return`<img class="mini-img" src="${h(src)}" onclick="openLB('${esc(src)}')" loading="lazy">`;
+}
+function vlinksH(raw){
+  return String(raw||'').split(/[\n,]+/).map(s=>s.trim()).filter(s=>/^https?:\/\//i.test(s))
+    .map((u,i,a)=>`<a class="vlink" href="${h(u)}" target="_blank" rel="noopener">▶️ ${a.length>1?'影片 '+(i+1):'開啟影片'}</a>`).join('');
+}
+function openLB(u){$('lbImg').src=u;$('lb').classList.add('show');}
+function closeLB(){$('lb').classList.remove('show');}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function n(v){return Number(v||0).toLocaleString('zh-TW');}
+function h(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function esc(s){return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 </script>
 </body>
 </html>
