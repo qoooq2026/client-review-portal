@@ -689,8 +689,7 @@ function renderDash(data){
     const mE=filteredForCalc.reduce((s,t)=>s+(t.exposure||0),0);
     const mF=filteredForCalc.reduce((s,t)=>s+(t.fee||0),0);
     const pm={};
-    const allTasks=(m.tasks||[]).filter(t=>t.taskId||(t.exposure&&t.exposure>0)||t.postLink||t.videoLink||t.script);
-    const filteredTasks=S.dashFilter==='all'?allTasks:allTasks.filter(t=>t.projectType===S.dashFilter);
+    const filteredTasks=filteredForCalc;
     filteredTasks.forEach(t=>{
       const p=t.product||'未分類';
       if(!pm[p])pm[p]={name:p,tasks:[],tE:0,tF:0};
