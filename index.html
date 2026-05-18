@@ -665,7 +665,8 @@ function renderDash(data){
 
   $('dashBody').innerHTML=months.map((m,mi)=>{
     const pm={};
-    (m.tasks||[]).forEach(t=>{
+    const validTasks=(m.tasks||[]).filter(t=>t.taskId||(t.exposure&&t.exposure>0)||t.postLink||t.videoLink||t.script);
+    validTasks.forEach(t=>{
       const p=t.product||'未分類';
       if(!pm[p])pm[p]={name:p,tasks:[],tE:0,tF:0};
       pm[p].tasks.push(t);pm[p].tE+=t.exposure||0;pm[p].tF+=t.fee||0;
