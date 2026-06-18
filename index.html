@@ -380,6 +380,18 @@ function readCacheMulti(clientId){
    FETCH2 — Cache 優先，失敗 fallback GAS
    注意：dashboard 走多列讀取；data（任務）永遠走 GAS（需要即時）
 ══════════════════════════════════════════ */
+  function setCachePill(at, live){
+  var el = document.getElementById('cachePill');
+  if(!el) return;
+  if(live){
+    el.innerHTML = '<div class="cpill stale"><div class="cdot"></div>Live</div>';
+    return;
+  }
+  if(at){
+    var m = Math.round((Date.now() - new Date(at)) / 60000);
+    el.innerHTML = '<div class="cpill live"><div class="cdot"></div>Cache · ' + (m < 1 ? '剛更新' : m + 'm 前') + '</div>';
+  }
+}
 async function fetch2(type,action,params={}){
   if(type==='meta'){
     return await gasAPI(action,params);
