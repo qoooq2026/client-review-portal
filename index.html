@@ -381,18 +381,19 @@ function readCacheMulti(clientId){
    注意：dashboard 走多列讀取；data（任務）永遠走 GAS（需要即時）
 ══════════════════════════════════════════ */
 async function fetch2(type,action,params={}){
+  if(type==='meta'){
+    const d=await gasAPI(action,params);
+    setCachePill('',true);
+    return d;
+  }
+
   if(type==='dashboard'){
     try{const d=await readCacheMulti(S.client);setCachePill(S.cacheAt,false);return d;}
     catch(_){const d=await gasAPI(action,params);setCachePill('',true);return d;}
   }
+
   try{const d=await readCache(type,S.client,params.month||'');setCachePill(S.cacheAt,false);return d;}
   catch(_){const d=await gasAPI(action,params);setCachePill('',true);return d;}
-}
-
-function setCachePill(at,live){
-  const el=$('cachePill');if(!el)return;
-  if(live){el.innerHTML='<div class="cpill stale"><div class="cdot"></div>Live</div>';return;}
-  if(at){const m=Math.round((Date.now()-new Date(at))/60000);el.innerHTML=`<div class="cpill live"><div class="cdot"></div>Cache · ${m<1?'剛更新':m+'m 前'}</div>`;}
 }
 
 /* ══════════════════════════════════════════
