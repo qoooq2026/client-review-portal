@@ -52,6 +52,10 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1
 .panel{background:var(--bg2);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh);padding:26px 24px;margin-bottom:16px}
 .ptitle{font-family:var(--serif);font-size:24px;font-weight:900;color:var(--forest);letter-spacing:-.01em;margin-bottom:4px}
 .psub{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:20px}
+.login-form{max-width:360px;margin:8px auto 0}
+.login-input{width:100%;border:1.5px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:14px;padding:11px 13px;margin-bottom:10px;color:var(--ink);transition:.15s}
+.login-input:focus{outline:none;border-color:var(--forest);box-shadow:0 0 0 3px rgba(23,49,44,.1)}
+.login-error{min-height:24px;color:var(--red);font-size:12px;margin-top:9px}
 
 /* ── TILE GRID ── */
 .tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
@@ -218,6 +222,15 @@ textarea{min-height:86px;resize:vertical;line-height:1.65}
 <div class="wrap">
   <div id="bc" class="bc"></div>
 
+  <section id="sLogin" class="panel hidden">
+    <div class="ptitle">管理員登入</div><div class="psub">Admin Access</div>
+    <div class="login-form">
+      <input id="adminPassword" class="login-input" type="password" autocomplete="current-password" placeholder="輸入管理密碼" onkeydown="if(event.key==='Enter')submitAdminLogin(event)">
+      <button id="adminLoginBtn" class="btn" type="button" onclick="submitAdminLogin(event)">登入</button>
+      <div id="adminLoginError" class="login-error" role="alert"></div>
+    </div>
+  </section>
+
   <section id="sClient" class="panel hidden">
     <div class="ptitle">選擇客戶</div><div class="psub">Select Client</div>
     <div id="clientGrid" class="tgrid"></div>
@@ -290,7 +303,7 @@ const S={
   client:'',clientName:'',month:'',product:'',type:'',
   meta:null,cc:{},
   dashboard:null,dashLoading:false,dashReady:false,dashFilter:'all',
-  lastScene:'sMonth',cacheAt:''
+  lastScene:'sMonth',cacheAt:'',adminToken:''
 };
 const qs=new URLSearchParams(location.search);
 const $=id=>document.getElementById(id);
@@ -301,7 +314,11 @@ let navLock=false,navSeq=0;
 ══════════════════════════════════════════ */
 (async()=>{
   S.client=qs.get('client')||'';
-  if(!S.client) return loadClients();
+  if(!S.client){
+    S.adminToken=getAdminToken();
+    if(!S.adminToken)return showAdminLogin();
+    return loadClients();
+  }
   // 並行：loadMeta 和 prefetchDash 同時跑
   await Promise.all([loadMeta(), prefetchDash()]);
 })();
@@ -414,18 +431,55 @@ async function safeNav(fn){
   try{await fn();}finally{setTimeout(()=>{navLock=false;document.body.style.opacity='';},260);}
 }
 const stale=seq=>seq!==navSeq;
-function showOnly(id){['sClient','sMonth','sProduct','sType','sTasks','sDash'].forEach(s=>$(s)?.classList[s===id?'remove':'add']('hidden'));}
+function showOnly(id){['sLogin','sClient','sMonth','sProduct','sType','sTasks','sDash'].forEach(s=>$(s)?.classList[s===id?'remove':'add']('hidden'));}
 
 /* ══════════════════════════════════════════
    CLIENTS
 ══════════════════════════════════════════ */
+function getAdminToken(){
+  try{return sessionStorage.getItem('cpAdminToken')||'';}catch(_){return '';}
+}
+function saveAdminToken(token){
+  try{sessionStorage.setItem('cpAdminToken',token);}catch(_){}
+}
+function clearAdminToken(){
+  try{sessionStorage.removeItem('cpAdminToken');}catch(_){}
+}
+function showAdminLogin(message=''){
+  showOnly('sLogin');
+  $('bc').innerHTML='';
+  $('appTitle').textContent='內容確認系統';
+  $('wallBtn').disabled=true;
+  $('adminLoginError').textContent=message;
+  setTimeout(()=>$('adminPassword')?.focus(),0);
+}
+async function submitAdminLogin(ev){
+  ev?.preventDefault();
+  const password=$('adminPassword').value;
+  const btn=$('adminLoginBtn');
+  $('adminLoginError').textContent='';
+  if(!password){$('adminLoginError').textContent='請輸入密碼';return;}
+  btn.disabled=true;btn.textContent='驗證中…';
+  try{
+    const d=await gasAPI('adminLogin',{password:password});
+    S.adminToken=d.token||'';
+    saveAdminToken(S.adminToken);
+    $('adminPassword').value='';
+    await loadClients();
+  }catch(e){
+    clearAdminToken();S.adminToken='';
+    $('adminLoginError').textContent=e.message||'登入失敗';
+  }finally{
+    btn.disabled=false;btn.textContent='登入';
+  }
+}
 async function loadClients(){
   showOnly('sClient');$('clientGrid').innerHTML='<div class="loader">載入中…</div>';
   try{
-    const d=await gasAPI('clients');
+    const d=await gasAPI('clients',{adminToken:S.adminToken});
     $('clientGrid').innerHTML=d.clients.map(c=>`<div class="tile" onclick="safeNav(()=>chooseClient('${esc(c.clientId)}','${esc(c.clientName)}'))"><div class="tile-icon">🏷️</div><b>${h(c.clientName||c.clientId)}</b></div>`).join('')||'<div class="empty">沒有啟用客戶</div>';
     crumbs();
-  }catch(e){$('clientGrid').innerHTML=`<div class="empty">載入失敗：${h(e.message)}</div>`;}
+  }catch(e){clearAdminToken();S.adminToken='';showAdminLogin(e.message||'登入已失效，請重新登入');}
 }
 async function chooseClient(id,name){
   S.client=id;S.clientName=name;S.dashboard=null;S.dashReady=false;
