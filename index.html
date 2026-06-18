@@ -382,18 +382,16 @@ function readCacheMulti(clientId){
 ══════════════════════════════════════════ */
 async function fetch2(type,action,params={}){
   if(type==='meta'){
-    const d=await gasAPI(action,params);
-    setCachePill('',true);
-    return d;
+    return await gasAPI(action,params);
   }
 
   if(type==='dashboard'){
-    try{const d=await readCacheMulti(S.client);setCachePill(S.cacheAt,false);return d;}
-    catch(_){const d=await gasAPI(action,params);setCachePill('',true);return d;}
+    try{return await readCacheMulti(S.client);}
+    catch(_){return await gasAPI(action,params);}
   }
 
-  try{const d=await readCache(type,S.client,params.month||'');setCachePill(S.cacheAt,false);return d;}
-  catch(_){const d=await gasAPI(action,params);setCachePill('',true);return d;}
+  try{return await readCache(type,S.client,params.month||'');}
+  catch(_){return await gasAPI(action,params);}
 }
 
 /* ══════════════════════════════════════════
