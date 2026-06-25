@@ -115,6 +115,12 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1
 .media-box{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .media-play{width:100px;text-align:center;padding:6px 8px;font-size:11px}
 .lb-frame{width:92vw;height:86vh;border:0;border-radius:10px;background:#000}
+.nav-busy .tile,
+.nav-busy .type-btn,
+.nav-busy .crumb.lnk{
+  pointer-events:none;
+  opacity:.82;
+}
 .az{background:var(--bg3);border-top:1px solid var(--line);padding:16px}
 .az-title{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
 .avz{background:#edf3f7;border-top:1.5px dashed #c4d8e5;padding:16px}
@@ -430,8 +436,28 @@ async function fetch2(type,action,params={}){
    NAV UTILS
 ══════════════════════════════════════════ */
 async function safeNav(fn){
-  if(navLock)return;navLock=true;document.body.style.opacity='.96';
-  try{await fn();}finally{setTimeout(()=>{navLock=false;document.body.style.opacity='';},260);}
+  if(navLock)return;
+  navLock=true;
+  document.body.classList.add('nav-busy');
+  document.body.style.opacity='.96';
+
+  const unlock=function(){
+    navLock=false;
+    document.body.classList.remove('nav-busy');
+    document.body.style.opacity='';
+  };
+
+  const timer=setTimeout(unlock, 12000);
+
+  try{
+    await fn();
+  }catch(e){
+    toast('載入失敗：'+(e.message||e));
+    throw e;
+  }finally{
+    clearTimeout(timer);
+    setTimeout(unlock,260);
+  }
 }
 const stale=seq=>seq!==navSeq;
 function showOnly(id){['sLogin','sClient','sMonth','sProduct','sType','sTasks','sDash'].forEach(s=>$(s)?.classList[s===id?'remove':'add']('hidden'));}
@@ -612,8 +638,8 @@ function taskHTML(t,sn,id,ds,isPrio){
   const vOpts=['影片需確認','需修改','修改稿需確認','確認完畢'];
   const ss=`<select id="ss-${id}">${sOpts.map(o=>`<option${s===o?' selected':''}>${o}</option>`).join('')}</select>`;
   const vs2=`<select id="vs-${id}">${vOpts.map(o=>`<option${vs===o?' selected':''}>${o}</option>`).join('')}</select>`;
-  const si=S.type==='thread'?['image1','image2','image3'].map(k=>imgt(t[k])).filter(Boolean).join(''):'' ;
-  const ci=S.type==='thread'?['commentImg1','commentImg2'].map(k=>imgt(t[k])).filter(Boolean).join(''):'' ;
+  const si=S.type==='thread'?['image1','image2','image3'].map(k=>imgThumb(t[k])).filter(Boolean).join(''):'' ;
+  const ci=S.type==='thread'?['commentImg1','commentImg2'].map(k=>imgThumb(t[k])).filter(Boolean).join(''):'' ;
   let vz='';
   if(S.type==='video'&&s==='確認完畢'){
     vz=`<div class="avz"><div class="avz-title">🎬 影片確認</div>${hv?vlinksH(t.videoLink):'<div style="color:var(--muted);font-size:12px;margin-bottom:10px">⏳ 影片製作中</div>'}${hv?vs2:''}<textarea id="vf-${id}" placeholder="影片回饋（可空白）">${h(t.videoFeedback||'')}</textarea>${hv?`<button class="btn btn-blue" onclick="doSub(event,'${id}','${esc(sn)}','${esc(t.taskId)}','video')">送出影片確認</button>`:''}</div>`;
