@@ -112,6 +112,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1
 .fval.hi-b{background:var(--blue-l);border-left:3px solid var(--blue);border-radius:0 10px 10px 0}
 .imgs-row{display:flex;gap:10px;flex-wrap:wrap}
 .img-th{width:100px;height:100px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer;background:#eee;flex-shrink:0}
+.media-box{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.media-play{width:100px;text-align:center;padding:6px 8px;font-size:11px}
+.lb-frame{width:92vw;height:86vh;border:0;border-radius:10px;background:#000}
 .az{background:var(--bg3);border-top:1px solid var(--line);padding:16px}
 .az-title{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
 .avz{background:#edf3f7;border-top:1.5px dashed #c4d8e5;padding:16px}
@@ -873,28 +876,57 @@ function expScr(id){const el=document.getElementById(id);if(el){el.classList.add
 /* ══════════════════════════════════════════
    HELPERS
 ══════════════════════════════════════════ */
-function imgt(url){
-  url=String(url||'').trim();if(!url)return'';
-  let src=url,m=url.match(/\/file\/d\/([^\/\?]+)/);
-  if(!m)m=url.match(/[?&]id=([^&]+)/);
-  if(m)src=`https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
-  else if(!url.includes('drive.google.com'))return'';
-  return`<img class="img-th" src="${h(src)}" onclick="openLB('${esc(src)}')" loading="lazy">`;
+function imgThumb(url){
+  const id=driveFileId(url);
+  if(!id)return'';
+
+  const thumb=`https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+  const preview=`https://drive.google.com/file/d/${id}/preview`;
+
+  return `<div class="media-box">
+    <img class="img-th" src="${h(thumb)}" onclick="openDrivePreview('${esc(preview)}')" loading="lazy">
+    <button class="btn-sm media-play" type="button" onclick="openDrivePreview('${esc(preview)}')">播放 / 預覽</button>
+  </div>`;
 }
+
 function imgMini(url){
-  url=String(url||'').trim();if(!url)return'';
-  let src=url,m=url.match(/\/file\/d\/([^\/\?]+)/);
-  if(!m)m=url.match(/[?&]id=([^&]+)/);
-  if(m)src=`https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
-  else if(!url.includes('drive.google.com'))return'';
-  return`<img class="mini-img" src="${h(src)}" onclick="openLB('${esc(src)}')" loading="lazy">`;
+  const id=driveFileId(url);
+  if(!id)return'';
+
+  const thumb=`https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+  const preview=`https://drive.google.com/file/d/${id}/preview`;
+
+  return `<img class="mini-img" src="${h(thumb)}" onclick="openDrivePreview('${esc(preview)}')" loading="lazy">`;
+}
+
+function driveFileId(url){
+  const u=String(url||'').trim();
+  let m=u.match(/\/file\/d\/([^\/\?]+)/);
+  if(m)return m[1];
+  m=u.match(/[?&]id=([^&]+)/);
+  if(m)return m[1];
+  m=u.match(/thumbnail\?id=([^&]+)/);
+  if(m)return m[1];
+  return '';
 }
 function vlinksH(raw){
   return String(raw||'').split(/[\n,]+/).map(s=>s.trim()).filter(s=>/^https?:\/\//i.test(s))
     .map((u,i,a)=>`<a class="vlink" href="${h(u)}" target="_blank" rel="noopener">▶️ ${a.length>1?'影片 '+(i+1):'開啟影片'}</a>`).join('');
 }
-function openLB(u){$('lbImg').src=u;$('lb').classList.add('show');}
-function closeLB(){$('lb').classList.remove('show');}
+function openLB(u){
+  $('lb').innerHTML=`<img id="lbImg" src="${h(u)}" alt="preview">`;
+  $('lb').classList.add('show');
+}
+
+function openDrivePreview(u){
+  $('lb').innerHTML=`<iframe id="lbImg" class="lb-frame" src="${h(u)}" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+  $('lb').classList.add('show');
+}
+
+function closeLB(){
+  $('lb').classList.remove('show');
+  $('lb').innerHTML='<img id="lbImg" alt="preview">';
+}
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 function n(v){return Number(v||0).toLocaleString('zh-TW');}
 function h(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
