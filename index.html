@@ -601,6 +601,12 @@ function getDS(t){
     if(s==='修改完成，需確認')return{g:'active',label:'修改稿待確認',cls:'b-rev',e:'🔍'};
     if(s==='確認完畢')return{g:'done',label:'確認完畢',cls:'b-ok',e:'✅'};
   }else{
+    if(!s && hv && (vs==='影片需確認' || vs==='修改稿需確認')){
+      return{g:'active',label:vs==='修改稿需確認'?'影片修改稿待確認':'影片待確認',cls:'b-need',e:'🎥'};
+    }
+    if(!s && vs){
+      return{g:'passive',label:'影片製作中',cls:'b-prog',e:'🎬'};
+    }
     if(!s||s==='客戶尚未確認')return{g:'active',label:'腳本待確認',cls:'b-need',e:'📝'};
     if(s==='客戶已回需修改')return{g:'passive',label:'腳本修改中',cls:'b-mod',e:'✏️'};
     if(s==='修改完成，需確認')return{g:'active',label:'修改稿待確認',cls:'b-rev',e:'🔍'};
@@ -620,7 +626,14 @@ function getDS(t){
    RENDER TASKS
 ══════════════════════════════════════════ */
 function renderTasks(tasks,sheetName){
-  const f=tasks.filter(t=>t.status?.trim());
+  const f=(tasks||[]).filter(t=>{
+    if(S.type==='video'){
+      return (t.status&&t.status.trim())
+        || (t.videoStatus&&t.videoStatus.trim())
+        || (t.videoLink&&t.videoLink.trim());
+    }
+    return t.status&&t.status.trim();
+  });
   if(!f.length){$('taskList').innerHTML='<div class="empty">目前沒有待確認的任務</div>';return;}
   const active=[],passive=[],done=[];
   f.forEach((t,i)=>{const ds=getDS(t),o={t,ds,i,sheetName};ds.g==='done'?done.push(o):ds.g==='passive'?passive.push(o):active.push(o);});
@@ -641,7 +654,7 @@ function taskHTML(t,sn,id,ds,isPrio){
   const si=S.type==='thread'?['image1','image2','image3'].map(k=>imgThumb(t[k])).filter(Boolean).join(''):'' ;
   const ci=S.type==='thread'?['commentImg1','commentImg2'].map(k=>imgThumb(t[k])).filter(Boolean).join(''):'' ;
   let vz='';
-  if(S.type==='video'&&s==='確認完畢'){
+  if(S.type==='video'&&(s==='確認完畢'||(!s&&(vs||hv)))){
     vz=`<div class="avz"><div class="avz-title">🎬 影片確認</div>${hv?vlinksH(t.videoLink):'<div style="color:var(--muted);font-size:12px;margin-bottom:10px">⏳ 影片製作中</div>'}${hv?vs2:''}<textarea id="vf-${id}" placeholder="影片回饋（可空白）">${h(t.videoFeedback||'')}</textarea>${hv?`<button class="btn btn-blue" onclick="doSub(event,'${id}','${esc(sn)}','${esc(t.taskId)}','video')">送出影片確認</button>`:''}</div>`;
   }
   return`<div class="task-card${isPrio?' prio':''}${ds.g==='done'?' done-c':''}" id="${id}"${isPrio&&ds.g!=='done'?' data-ao':''}>
