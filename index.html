@@ -701,7 +701,15 @@ async function doSub(ev,id,sn,tid,kind){
     // 就地更新 badge
     const card=document.getElementById(id);
     if(card){
-      const ft={status:kind==='script'?p.status:s,videoStatus:kind==='video'?p.videoStatus:'',videoLink:card.querySelector('.vlink')?'y':''};
+      const currentScriptStatus = $(`ss-${id}`)?.value || '';
+      const currentVideoStatus = $(`vs-${id}`)?.value || '';
+    
+      const ft = {
+        status: kind === 'script' ? p.status : currentScriptStatus,
+        videoStatus: kind === 'video' ? p.videoStatus : currentVideoStatus,
+        videoLink: card.querySelector('.vlink') ? 'y' : ''
+      };
+    
       const nd=getDS(ft);
       const bdg=card.querySelector('.bdg');if(bdg){bdg.className='bdg '+nd.cls;bdg.textContent=nd.label;}
       const ei=card.querySelector('.thead span:first-child');if(ei)ei.textContent=nd.e;
