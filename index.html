@@ -336,31 +336,46 @@ let navLock=false,navSeq=0;
    GAS API
 ══════════════════════════════════════════ */
 async function gasAPI(action,params={}){
-  let res;
+  let lastText = '';
 
-  if(action === 'submit'){
-    res = await fetch(GAS, {
-      method: 'POST',
-      body: JSON.stringify(params)
-    });
-  }else{
-    const u = new URL(GAS);
-    u.searchParams.set('action', action);
-    Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v??''));
-    res = await fetch(u);
+  for(let attempt=1; attempt<=3; attempt++){
+    try{
+      let res;
+
+      if(action === 'submit'){
+        res = await fetch(GAS, {
+          method: 'POST',
+          body: JSON.stringify(params),
+          cache: 'no-store'
+        });
+      }else{
+        const u = new URL(GAS);
+        u.searchParams.set('action', action);
+        u.searchParams.set('_t', Date.now());
+        Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v??''));
+        res = await fetch(u, { cache: 'no-store' });
+      }
+
+      const text = await res.text();
+      lastText = text;
+
+      const data = JSON.parse(text);
+      if(data.ok === false) throw new Error(data.error || 'API error');
+      return data;
+
+    }catch(e){
+      if(attempt < 3){
+        await new Promise(r=>setTimeout(r, 600 * attempt));
+        continue;
+      }
+
+      if(String(lastText).trim().startsWith('<')){
+        throw new Error('API 暫時回傳 Google HTML，請重新整理再試一次');
+      }
+
+      throw e;
+    }
   }
-
-  const text = await res.text();
-  let data;
-
-  try{
-    data = JSON.parse(text);
-  }catch(e){
-    throw new Error('API 回傳不是 JSON，可能是 GAS 部署網址/權限/網址過長問題：' + text.slice(0,80));
-  }
-
-  if(data.ok === false) throw new Error(data.error || 'API error');
-  return data;
 }
 
 /* ══════════════════════════════════════════
